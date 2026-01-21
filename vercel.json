@@ -1,9 +1,6 @@
 {
-  "version": 2,
-  "buildCommand": "cd web && npm install && npm run build",
+  "buildCommand": "cd web && npm run build",
   "devCommand": "cd web && npm run dev",
   "installCommand": "cd web && npm install",
-  "framework": "nextjs",
-  "outputDirectory": "web/.next",
-  "regions": ["sin1"]
+  "outputDirectory": "web/.next"
 }
