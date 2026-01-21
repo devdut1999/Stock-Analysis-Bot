@@ -1,0 +1,54 @@
+/**
+ * Market types and configurations
+ */
+export const MARKET_CONFIGS = {
+    US: {
+        region: 'US',
+        exchanges: ['NYSE', 'NASDAQ', 'AMEX'],
+        tradingHours: {
+            open: '09:30',
+            close: '16:00',
+            timezone: 'America/New_York',
+            preMarket: { open: '04:00', close: '09:30' },
+            postMarket: { open: '16:00', close: '20:00' }
+        },
+        circuitBreakers: {
+            level1: 7,
+            level2: 13,
+            level3: 20
+        },
+        settlementCycle: 'T+1',
+        minLotSize: 1,
+        currency: 'USD',
+        apis: {
+            marketData: ['polygon', 'twelvedata', 'alphaVantage'],
+            fundamentals: ['fmp', 'alphaVantage'],
+            news: ['alphaVantage', 'newsapi']
+        }
+    },
+    INDIA: {
+        region: 'INDIA',
+        exchanges: ['NSE', 'BSE', 'MCX', 'NCDEX'],
+        tradingHours: {
+            open: '09:15',
+            close: '15:30',
+            timezone: 'Asia/Kolkata',
+            preMarket: { open: '09:00', close: '09:15' },
+            postMarket: { open: '15:40', close: '16:00' }
+        },
+        circuitBreakers: {
+            level1: 10,
+            level2: 15,
+            level3: 20
+        },
+        settlementCycle: 'T+1',
+        minLotSize: 1, // Varies by stock
+        currency: 'INR',
+        apis: {
+            marketData: ['truedata', 'breeze', 'twelvedata', 'indianapi'],
+            fundamentals: ['eodhd', 'fmp', 'breeze'],
+            news: ['newsapi', 'moneycontrol']
+        }
+    }
+};
+//# sourceMappingURL=markets.js.map

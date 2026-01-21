@@ -3,6 +3,7 @@ import { collectStockData } from '../../../lib/services/intelligence-hub';
 import { orchestrateAnalysis } from '../../../lib/agents/orchestrator';
 import { generateTradingSignal, formatTradingSignal } from '../../../lib/trading/signal-generator';
 
+export const runtime = 'nodejs'; // Use Node.js runtime for Anthropic SDK
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 seconds for deep analysis
 
