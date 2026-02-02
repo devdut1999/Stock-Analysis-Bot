@@ -7,7 +7,8 @@
       "Bash(curl:*)",
       "Bash(vercel deploy:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nIntegrate backend analysis engine with web app\n\n- Copy Phase 1-3 backend code to web/lib\n- Update API route to use real multi-agent analysis\n- Add dependencies: @anthropic-ai/sdk, axios, zod\n- Fix TypeScript import paths and type exports\n- Quick analysis: returns market data only\n- Deep analysis: runs 10 AI agents + trading signal generation\n- Support for Indian stocks \\(NSE/BSE\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(vercel inspect:*)"
+      "Bash(vercel inspect:*)",
+      "Bash(vercel ls:*)"
     ]
   }
 }
