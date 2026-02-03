@@ -48,24 +48,31 @@ export function detectMarket(symbol: string): DetectedMarket {
     };
   }
 
-  // Check for common Indian stock patterns
-  // Indian stocks are typically short (4-10 chars) without special suffixes
-  // Examples: RELIANCE, TCS, INFY, HDFCBANK
-  const isLikelyIndian =
-    rawSymbol.length >= 3 &&
-    rawSymbol.length <= 15 &&
-    /^[A-Z0-9]+$/.test(rawSymbol) &&
-    !rawSymbol.includes('-') &&
-    !rawSymbol.includes('.');
-
   // List of known Indian tickers for disambiguation
+  // This is a comprehensive list of major NSE/BSE stocks
   const knownIndianTickers = new Set([
+    // Nifty 50
     'RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK', 'SBIN',
     'BHARTIARTL', 'ITC', 'KOTAKBANK', 'LT', 'HINDUNILVR', 'BAJFINANCE',
     'ASIANPAINT', 'MARUTI', 'TITAN', 'ULTRACEMCO', 'WIPRO', 'NESTLEIND',
     'AXISBANK', 'SUNPHARMA', 'TATASTEEL', 'TATAMOTORS', 'POWERGRID',
-    'ONGC', 'NTPC', 'COAL INDIA', 'INDUSINDBK', 'TECHM', 'HCLTECH',
-    'M&M', 'BAJAJFINSV', 'ADANIENT', 'ADANIGREEN', 'JSWSTEEL'
+    'ONGC', 'NTPC', 'COALINDIA', 'INDUSINDBK', 'TECHM', 'HCLTECH',
+    'MM', 'BAJAJFINSV', 'ADANIENT', 'ADANIGREEN', 'JSWSTEEL',
+    // Additional popular stocks
+    'HDFC', 'BAJAJ-AUTO', 'DRREDDY', 'DIVISLAB', 'CIPLA', 'EICHERMOT',
+    'GRASIM', 'HEROMOTOCO', 'HINDALCO', 'BRITANNIA', 'APOLLOHOSP',
+    'TATACONSUM', 'ADANIPORTS', 'BPCL', 'SBILIFE', 'HDFCLIFE',
+    'DABUR', 'GODREJCP', 'MARICO', 'PIDILITIND', 'BERGEPAINT',
+    'HAVELLS', 'VOLTAS', 'TRENT', 'ZOMATO', 'PAYTM', 'NYKAA',
+    'DMART', 'IRCTC', 'HAL', 'BEL', 'BHEL', 'GAIL', 'IOC',
+    'PNB', 'BANKBARODA', 'CANBK', 'UNIONBANK', 'IDFCFIRSTB',
+    'BANDHANBNK', 'FEDERALBNK', 'RBLBANK', 'YESBANK', 'AUBANK',
+    'TATAPOWER', 'ADANIPOWER', 'NTPC', 'NHPC', 'SJVN', 'TATAELXSI',
+    'PERSISTENT', 'LTIM', 'MPHASIS', 'COFORGE', 'MINDTREE',
+    'ZEEL', 'PVR', 'INOX', 'PVRINOX', 'SUNTV', 'NETWORK18',
+    'JUBLFOOD', 'DEVYANI', 'WESTLIFE', 'TATACOMM', 'IDEA', 'VBL',
+    // Common variations with special characters
+    'M&M', 'L&TFH', 'M&MFIN'
   ]);
 
   if (knownIndianTickers.has(rawSymbol)) {
@@ -77,8 +84,29 @@ export function detectMarket(symbol: string): DetectedMarket {
     };
   }
 
-  // Default to US market for standard ticker formats
-  // US tickers: 1-5 characters, optionally with class suffix (e.g., BRK.A, BRK.B)
+  // Check for common Indian stock patterns
+  // Indian stocks are typically 3-15 chars, alphanumeric, without dots
+  // If it looks like an Indian stock pattern and US market isn't supported yet,
+  // default to Indian market to provide better UX
+  const looksLikeIndianTicker =
+    rawSymbol.length >= 3 &&
+    rawSymbol.length <= 15 &&
+    /^[A-Z0-9&-]+$/.test(rawSymbol) &&
+    !rawSymbol.includes('.');
+
+  // Since US market isn't supported yet (Phase 7), treat ambiguous tickers as Indian
+  // This provides better UX - users can try any Indian stock without knowing the exact list
+  if (looksLikeIndianTicker) {
+    return {
+      market: 'INDIA',
+      exchange: 'NSE',  // Default to NSE
+      normalizedSymbol: rawSymbol,
+      rawSymbol
+    };
+  }
+
+  // Default to US market for standard ticker formats with dots (e.g., BRK.A, BRK.B)
+  // This will show the "US market coming soon" message
   return {
     market: 'US',
     normalizedSymbol: rawSymbol,
