@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { INDIAN_STOCKS, StockInfo } from '../../lib/data/indian-stocks';
+import StockLogo from './StockLogo';
 
 function fuzzySearch(query: string, stocks: StockInfo[], limit = 6): StockInfo[] {
   if (!query.trim()) return [];
@@ -160,9 +161,7 @@ export default function Navbar() {
                       index === selectedIndex ? 'bg-[#f7f7f7]' : 'hover:bg-[#f7f7f7]'
                     } ${index !== suggestions.length - 1 ? 'border-b border-[#f0f0f0]' : ''}`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#f0f0f0] flex items-center justify-center text-[11px] font-semibold text-[#666]">
-                      {stock.symbol.slice(0, 2)}
-                    </div>
+                    <StockLogo symbol={stock.symbol} name={stock.name} size={32} />
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-medium text-[#1a1a1a]">{stock.symbol}</p>
                       <p className="text-[11px] text-[#999] truncate">{stock.name}</p>

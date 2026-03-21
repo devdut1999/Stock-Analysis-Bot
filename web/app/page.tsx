@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { INDIAN_STOCKS } from '../lib/data/indian-stocks';
+import StockLogo, { preloadLogos, getStockColor } from './components/StockLogo';
 
 interface MarketIndex {
   symbol: string;
@@ -41,16 +42,6 @@ const SECTORS = [
   { name: 'Realty', stocks: 18, color: '#e0f7fa' },
 ];
 
-const STOCK_COLORS = [
-  '#e3f2fd', '#e8f5e9', '#fff3e0', '#fce4ec', '#f3e5f5', 
-  '#e0f7fa', '#fffde7', '#eceff1', '#fbe9e7', '#e8eaf6'
-];
-
-function getStockColor(symbol: string): string {
-  const index = symbol.charCodeAt(0) % STOCK_COLORS.length;
-  return STOCK_COLORS[index];
-}
-
 export default function ExplorePage() {
   const [indices, setIndices] = useState<MarketIndex[]>([]);
   const [gainers, setGainers] = useState<StockMover[]>([]);
@@ -77,6 +68,10 @@ export default function ExplorePage() {
         const data = await moversRes.json();
         setGainers(data.gainers || []);
         setLosers(data.losers || []);
+        
+        // Preload logos for visible stocks
+        const allSymbols = [...(data.gainers || []), ...(data.losers || [])].map(s => s.symbol);
+        preloadLogos(allSymbols);
       }
     } catch {
     } finally {
@@ -218,12 +213,7 @@ export default function ExplorePage() {
                 className={`grid grid-cols-[1fr_100px_90px] gap-4 px-5 py-4 items-center hover:bg-[#fafafa] transition-colors ${i !== 7 ? 'border-b border-[#f5f5f5]' : ''}`}
               >
                 <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-bold text-[#444]"
-                    style={{ backgroundColor: getStockColor(stock.symbol) }}
-                  >
-                    {stock.symbol.slice(0, 2)}
-                  </div>
+                  <StockLogo symbol={stock.symbol} name={stock.name} size={40} />
                   <div>
                     <p className="text-[14px] font-semibold text-[#1a1a1a]">{stock.symbol}</p>
                     <p className="text-[12px] text-[#999] truncate max-w-[180px]">{stock.name}</p>
@@ -293,12 +283,7 @@ function StockSection({
               className="w-[170px] shrink-0 bg-white rounded-2xl border border-[#eee] p-4 hover:shadow-md hover:border-[#ddd] transition-all group"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div 
-                  className="w-11 h-11 rounded-full flex items-center justify-center text-[12px] font-bold text-[#444] group-hover:scale-105 transition-transform"
-                  style={{ backgroundColor: getStockColor(stock.symbol) }}
-                >
-                  {stock.symbol.slice(0, 2)}
-                </div>
+                <StockLogo symbol={stock.symbol} name={stock.name} size={44} className="group-hover:scale-105 transition-transform" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{stock.symbol}</p>
                   <p className="text-[11px] text-[#999] truncate">{stock.name}</p>
