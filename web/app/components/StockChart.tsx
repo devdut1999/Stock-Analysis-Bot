@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { createChart, ColorType, IChartApi, ISeriesApi, LineSeries, AreaSeries, CandlestickSeries } from 'lightweight-charts';
 
 type TimeRange = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
@@ -23,6 +23,12 @@ interface StockChartProps {
 
 const TIME_RANGES: TimeRange[] = ['1D', '1W', '1M', '3M', '6M', '1Y', '3Y', '5Y', 'ALL'];
 
+// How many days of data each range needs
+const RANGE_DAYS: Record<TimeRange, number> = {
+  '1D': 2, '1W': 7, '1M': 30, '3M': 90, '6M': 180,
+  '1Y': 365, '3Y': 1095, '5Y': 1825, 'ALL': 3650,
+};
+
 export default function StockChart({ 
   symbol, 
   currentPrice, 
@@ -36,9 +42,46 @@ export default function StockChart({
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
   const [chartType, setChartType] = useState<ChartType>('line');
   const [isLoading, setIsLoading] = useState(false);
+  const [extendedData, setExtendedData] = useState<typeof historicalData>([]);
 
   const isPositive = change >= 0;
   const lineColor = isPositive ? '#10b981' : '#ef4444';
+
+  // Merge initial + extended data (memoized)
+  const allData = useMemo(() => {
+    const merged = [...historicalData, ...extendedData];
+    const seen = new Set<string>();
+    return merged.filter(d => {
+      if (seen.has(d.date)) return false;
+      seen.add(d.date);
+      return true;
+    }).sort((a, b) => a.date.localeCompare(b.date));
+  }, [historicalData, extendedData]);
+
+  // Track the max days we've fetched so far
+  const maxFetchedRef = useRef(30);
+
+  const handleRangeChange = async (range: TimeRange) => {
+    setSelectedRange(range);
+    const neededDays = RANGE_DAYS[range];
+
+    // Only fetch if we need more data than we have
+    if (neededDays > maxFetchedRef.current * 1.2 && symbol) {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symbol)}&type=quick&days=${neededDays}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.historical?.length) {
+            setExtendedData(data.historical);
+            maxFetchedRef.current = neededDays;
+          }
+        }
+      } catch { }
+      setIsLoading(false);
+    }
+    // If data already loaded, the useEffect will re-filter and fitContent
+  };
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -57,7 +100,8 @@ export default function StockChart({
       height: 320,
       rightPriceScale: {
         borderColor: '#e2e8f0',
-        scaleMargins: { top: 0.1, bottom: 0.1 },
+        scaleMargins: { top: 0.15, bottom: 0.15 },
+        entireTextOnly: true,
       },
       timeScale: {
         borderColor: '#e2e8f0',
@@ -98,13 +142,15 @@ export default function StockChart({
   }, []);
 
   useEffect(() => {
-    if (!chartRef.current || historicalData.length === 0) return;
+    if (!chartRef.current || allData.length === 0) return;
 
     if (seriesRef.current) {
       chartRef.current.removeSeries(seriesRef.current);
     }
 
-    const filteredData = filterDataByRange(historicalData, selectedRange);
+    // Always set ALL data on the series
+    const allLineData = allData.map(d => ({ time: d.date as string, value: d.close }));
+    const allCandleData = allData.map(d => ({ time: d.date as string, open: d.open, high: d.high, low: d.low, close: d.close }));
 
     if (chartType === 'line') {
       const lineSeries = chartRef.current.addSeries(LineSeries, {
@@ -115,23 +161,21 @@ export default function StockChart({
         crosshairMarkerBorderColor: lineColor,
         crosshairMarkerBackgroundColor: '#ffffff',
         priceLineVisible: false,
+        lastValueVisible: true,
       });
 
-      const lineData = filteredData.map(d => ({
-        time: d.date as string,
-        value: d.close,
-      }));
-
-      lineSeries.setData(lineData);
+      lineSeries.setData(allLineData);
       seriesRef.current = lineSeries;
 
       const areaSeries = chartRef.current.addSeries(AreaSeries, {
-        topColor: isPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-        bottomColor: isPositive ? 'rgba(16, 185, 129, 0.0)' : 'rgba(239, 68, 68, 0.0)',
+        topColor: isPositive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+        bottomColor: 'transparent',
         lineColor: 'transparent',
+        priceLineVisible: false,
+        lastValueVisible: false,
       });
 
-      areaSeries.setData(lineData);
+      areaSeries.setData(allLineData);
     } else {
       const candleSeries = chartRef.current.addSeries(CandlestickSeries, {
         upColor: '#10b981',
@@ -140,22 +184,32 @@ export default function StockChart({
         borderDownColor: '#ef4444',
         wickUpColor: '#10b981',
         wickDownColor: '#ef4444',
+        priceLineVisible: false,
+        lastValueVisible: true,
       });
 
-      const candleData = filteredData.map(d => ({
-        time: d.date as string,
-        open: d.open,
-        high: d.high,
-        low: d.low,
-        close: d.close,
-      }));
-
-      candleSeries.setData(candleData);
+      candleSeries.setData(allCandleData);
       seriesRef.current = candleSeries;
     }
 
-    chartRef.current.timeScale().fitContent();
-  }, [historicalData, selectedRange, chartType, lineColor, isPositive]);
+    // Zoom to the selected range instead of filtering data
+    if (selectedRange === 'ALL') {
+      chartRef.current.timeScale().fitContent();
+    } else {
+      const rangeData = filterDataByRange(allData, selectedRange);
+      if (rangeData.length > 0) {
+        // Find the index of the first visible data point in allData
+        const firstVisibleDate = rangeData[0].date;
+        const startIdx = allData.findIndex(d => d.date === firstVisibleDate);
+        chartRef.current.timeScale().setVisibleLogicalRange({
+          from: startIdx,
+          to: allData.length - 1,
+        });
+      } else {
+        chartRef.current.timeScale().fitContent();
+      }
+    }
+  }, [allData, selectedRange, chartType, lineColor, isPositive]);
 
   const filterDataByRange = (data: typeof historicalData, range: TimeRange) => {
     const now = new Date();
@@ -204,7 +258,7 @@ export default function StockChart({
             {TIME_RANGES.map((range) => (
               <button
                 key={range}
-                onClick={() => setSelectedRange(range)}
+                onClick={() => handleRangeChange(range)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   selectedRange === range
                     ? 'bg-white text-slate-900 shadow-sm'
@@ -251,16 +305,24 @@ export default function StockChart({
         style={{ minHeight: '320px' }}
       />
 
-      {/* No Data State */}
-      {historicalData.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-          <div className="text-center">
-            <div className="text-slate-400 mb-2">
-              <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4" />
-              </svg>
+      {/* Loading Skeleton */}
+      {allData.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90">
+          <div className="w-full px-8">
+            {/* Animated chart skeleton */}
+            <div className="flex items-end gap-1 h-32 mb-4">
+              {[40, 55, 45, 60, 50, 70, 65, 75, 60, 80, 70, 85, 75, 90, 80, 95, 85, 78, 82, 88].map((h, i) => (
+                <div
+                  key={i}
+                  className="flex-1 bg-gradient-to-t from-indigo-100 to-indigo-50 rounded-t animate-pulse"
+                  style={{ height: `${h}%`, animationDelay: `${i * 50}ms` }}
+                />
+              ))}
             </div>
-            <p className="text-sm text-slate-500">Loading chart data...</p>
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-slate-400 font-medium">Loading chart</span>
+            </div>
           </div>
         </div>
       )}

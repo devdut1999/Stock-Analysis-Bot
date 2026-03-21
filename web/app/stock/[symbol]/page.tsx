@@ -692,11 +692,33 @@ function VCPSection({ symbol }: { symbol: string }) {
   );
 }
 
+function timeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = now - then;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+const PLATFORM_META: Record<string, { icon: string; color: string; bg: string }> = {
+  rss: { icon: '📰', color: 'text-orange-600', bg: 'bg-orange-50' },
+  google_news: { icon: '🔍', color: 'text-blue-600', bg: 'bg-blue-50' },
+  reddit: { icon: '💬', color: 'text-orange-500', bg: 'bg-orange-50' },
+  youtube: { icon: '▶️', color: 'text-red-600', bg: 'bg-red-50' },
+  telegram: { icon: '✈️', color: 'text-sky-600', bg: 'bg-sky-50' },
+};
+
 function NewsContent({ symbol }: { symbol: string }) {
   const [news, setNews] = useState<any[]>([]);
   const [sentiment, setSentiment] = useState<any>(null);
   const [sources, setSources] = useState<string[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
+  const [activeSource, setActiveSource] = useState<string>('all');
 
   useEffect(() => {
     fetchNewsData();
@@ -705,7 +727,7 @@ function NewsContent({ symbol }: { symbol: string }) {
   const fetchNewsData = async () => {
     setNewsLoading(true);
     try {
-      const res = await fetch(`/api/news-feed?symbol=${encodeURIComponent(symbol)}&limit=25`);
+      const res = await fetch(`/api/news-feed?symbol=${encodeURIComponent(symbol)}&limit=30`);
       if (res.ok) {
         const data = await res.json();
         setNews(data.items || []);
@@ -717,36 +739,53 @@ function NewsContent({ symbol }: { symbol: string }) {
     }
   };
 
-  const platformIcon: Record<string, string> = {
-    rss: '📰',
-    google_news: '🔍',
-    reddit: '💬',
-    youtube: '▶️',
-    telegram: '✈️',
-  };
+  // Group news by platform
+  const platformCounts: Record<string, number> = { all: news.length };
+  for (const item of news) {
+    const p = item.sourcePlatform || 'other';
+    platformCounts[p] = (platformCounts[p] || 0) + 1;
+  }
+
+  const filteredNews = activeSource === 'all'
+    ? news
+    : news.filter(n => n.sourcePlatform === activeSource);
+
+  // Source tabs config
+  const SOURCE_TABS = [
+    { id: 'all', label: 'All', icon: '📋' },
+    { id: 'google_news', label: 'News', icon: '🔍' },
+    { id: 'reddit', label: 'Reddit', icon: '💬' },
+    // Future: { id: 'youtube', label: 'YouTube', icon: '▶️' },
+    // Future: { id: 'telegram', label: 'Telegram', icon: '✈️' },
+  ];
 
   if (newsLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
-          <p className="text-slate-400 text-sm">Fetching news from {sources.length || 3} sources...</p>
-        </div>
+      <div className="space-y-4 p-2">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex gap-4 p-4 animate-pulse">
+            <div className="w-10 h-10 bg-slate-100 rounded-xl shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-slate-100 rounded w-3/4" />
+              <div className="h-3 bg-slate-50 rounded w-1/2" />
+            </div>
+            <div className="h-5 w-14 bg-slate-100 rounded-full shrink-0" />
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      {/* Sentiment + Sources Summary */}
-      <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+    <div className="space-y-4">
+      {/* Sentiment + Source Tabs */}
+      <div className="flex items-center justify-between">
         {sentiment && (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Sentiment</span>
-            <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full ${
-              sentiment.overall === 'Bullish' ? 'bg-emerald-100 text-emerald-700' :
-              sentiment.overall === 'Bearish' ? 'bg-red-100 text-red-600' :
-              'bg-slate-100 text-slate-600'
+            <span className={`text-[13px] font-bold px-3 py-1 rounded-lg ${
+              sentiment.overall === 'Bullish' ? 'bg-emerald-50 text-emerald-700' :
+              sentiment.overall === 'Bearish' ? 'bg-red-50 text-red-600' :
+              'bg-slate-50 text-slate-600'
             }`}>
               {sentiment.overall}
             </span>
@@ -755,58 +794,78 @@ function NewsContent({ symbol }: { symbol: string }) {
             </span>
           </div>
         )}
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-[11px] text-slate-400">Sources:</span>
-          {sources.map(s => (
-            <span key={s} className="text-[11px] font-medium bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{s}</span>
-          ))}
-        </div>
       </div>
 
-      {/* News Feed */}
-      {news.length > 0 ? (
-        <div className="space-y-3">
-          {news.map((item, i) => (
-            <a
-              key={i}
-              href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-md transition-all shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-sm">{platformIcon[item.sourcePlatform] || '📄'}</span>
-                    <span className="text-[11px] font-medium text-slate-400">{item.source}</span>
+      {/* Source Filter Tabs */}
+      <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
+        {SOURCE_TABS.filter(t => t.id === 'all' || platformCounts[t.id]).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSource(tab.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-all ${
+              activeSource === tab.id
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <span>{tab.icon}</span>
+            <span>{tab.label}</span>
+            {platformCounts[tab.id] != null && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                activeSource === tab.id ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500'
+              }`}>
+                {platformCounts[tab.id]}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* News List */}
+      {filteredNews.length > 0 ? (
+        <div className="divide-y divide-slate-100">
+          {filteredNews.map((item, i) => {
+            const platform = PLATFORM_META[item.sourcePlatform] || PLATFORM_META.rss;
+            return (
+              <a
+                key={i}
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex gap-3 py-3.5 px-1 hover:bg-slate-50 rounded-xl transition-colors group"
+              >
+                <div className={`w-9 h-9 rounded-lg ${platform.bg} flex items-center justify-center text-base shrink-0 mt-0.5`}>
+                  {platform.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[13px] font-semibold text-slate-900 leading-snug group-hover:text-indigo-700 transition-colors line-clamp-2">
+                    {item.title}
+                  </h4>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-[11px] font-semibold ${platform.color}`}>{item.source}</span>
                     {item.published && (
-                      <span className="text-[11px] text-slate-300">
-                        {new Date(item.published).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                      </span>
+                      <>
+                        <span className="text-slate-200">·</span>
+                        <span className="text-[11px] text-slate-400">{timeAgo(item.published)}</span>
+                      </>
                     )}
+                    <span className="text-[11px] text-indigo-500 font-medium ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Read →</span>
                   </div>
-                  <h4 className="text-sm font-semibold text-slate-900 line-clamp-2">{item.title}</h4>
-                  {item.summary && item.summary !== item.title && (
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-1">{item.summary}</p>
-                  )}
                 </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                    item.sentiment === 'Bullish' ? 'bg-emerald-100 text-emerald-700' :
-                    item.sentiment === 'Bearish' ? 'bg-red-100 text-red-600' :
-                    'bg-slate-100 text-slate-500'
-                  }`}>
-                    {item.sentiment}
-                  </span>
-                  <span className="text-[11px] text-slate-300 font-medium">{item.impactScore}/10</span>
-                </div>
-              </div>
-            </a>
-          ))}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 self-start mt-1 ${
+                  item.sentiment === 'Bullish' ? 'bg-emerald-50 text-emerald-600' :
+                  item.sentiment === 'Bearish' ? 'bg-red-50 text-red-500' :
+                  'bg-slate-50 text-slate-400'
+                }`}>
+                  {item.sentiment === 'Bullish' ? '↑' : item.sentiment === 'Bearish' ? '↓' : '→'}
+                </span>
+              </a>
+            );
+          })}
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-400 text-sm shadow-sm">
-          No news found for {symbol}. Try searching for a more popular stock.
+        <div className="py-12 text-center text-slate-400 text-sm">
+          No {activeSource === 'all' ? '' : activeSource.replace('_', ' ') + ' '}articles found for {symbol}
         </div>
       )}
     </div>

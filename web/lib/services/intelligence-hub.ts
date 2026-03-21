@@ -271,6 +271,28 @@ export async function collectStockData(
     };
 
     // Assemble aggregated data
+    // Format historical data for chart — must be sorted ascending, deduplicated by date
+    const historical = Array.isArray(historicalDataFinal)
+      ? (() => {
+          const seen = new Set<string>();
+          return historicalDataFinal
+            .map((d: any) => ({
+              date: d.date instanceof Date ? d.date.toISOString().split('T')[0] : String(d.date).split('T')[0],
+              open: d.open,
+              high: d.high,
+              low: d.low,
+              close: d.close,
+              volume: d.volume,
+            }))
+            .filter(d => {
+              if (seen.has(d.date)) return false;
+              seen.add(d.date);
+              return true;
+            })
+            .sort((a, b) => a.date.localeCompare(b.date));
+        })()
+      : [];
+
     const aggregatedData: AggregatedStockData = {
       symbol: normalizedSymbol,
       market,
@@ -281,6 +303,7 @@ export async function collectStockData(
       fundamentals,
       technicals,
       sentiment,
+      historical,
 
       indiaSpecific,
 
@@ -288,7 +311,7 @@ export async function collectStockData(
         priceDataAvailable: !!priceDataFinal,
         fundamentalsAvailable: Object.keys(fundamentals).length > 0,
         technicalsAvailable: includeTechnicals && Array.isArray(historicalDataFinal) && historicalDataFinal.length > 0,
-        sentimentAvailable: false, // Will be true once news API is integrated
+        sentimentAvailable: false,
         dataSource,
       }
     };

@@ -91,6 +91,16 @@ export async function fetchAllNews(
     .filter((r): r is PromiseFulfilledResult<AggregatedNewsItem[]> => r.status === 'fulfilled')
     .flatMap(r => r.value);
 
+  // Normalize dates to ISO format
+  for (const item of allItems) {
+    if (item.published) {
+      const parsed = new Date(item.published);
+      if (!isNaN(parsed.getTime())) {
+        item.published = parsed.toISOString();
+      }
+    }
+  }
+
   // Deduplicate by title similarity
   const seen = new Set<string>();
   const unique = allItems.filter(item => {
@@ -100,8 +110,13 @@ export async function fetchAllNews(
     return true;
   });
 
-  // Sort by impact score descending
-  unique.sort((a, b) => (b.impactScore || 0) - (a.impactScore || 0));
+  // Sort by recency first, then impact score as tiebreaker
+  unique.sort((a, b) => {
+    const dateA = a.published ? new Date(a.published).getTime() : 0;
+    const dateB = b.published ? new Date(b.published).getTime() : 0;
+    if (Math.abs(dateA - dateB) > 86400000) return dateB - dateA; // >1 day apart: recency wins
+    return (b.impactScore || 0) - (a.impactScore || 0); // Same day: impact wins
+  });
 
   const items = unique.slice(0, limit);
 

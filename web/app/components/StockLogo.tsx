@@ -81,27 +81,31 @@ interface StockLogoProps {
 }
 
 export default function StockLogo({ symbol, name, size = 40, className = '', showRealLogo = false }: StockLogoProps) {
-  const [imgError, setImgError] = useState(false);
+  const [imgError, setImgError] = useState(0); // 0=try clearbit, 1=try google, 2=fallback
   const bgColor = getStockColor(symbol);
   const initials = getStockInitials(symbol);
   const domain = showRealLogo ? getLogoDomain(symbol) : null;
 
   // Show real logo only on detail pages for known companies
-  if (domain && !imgError) {
+  if (domain && imgError < 2) {
+    const logoSrc = imgError === 0
+      ? `https://logo.clearbit.com/${domain}?size=${size * 2}`
+      : `https://www.google.com/s2/favicons?domain=${domain}&sz=${size * 2}`;
+
     return (
       <div
-        className={`relative rounded-full overflow-hidden bg-white border border-slate-200 shrink-0 ${className}`}
+        className={`relative rounded-xl overflow-hidden bg-white border border-slate-100 shrink-0 shadow-sm ${className}`}
         style={{ width: size, height: size }}
         title={name || symbol}
       >
         <Image
-          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=${size * 2}`}
+          src={logoSrc}
           alt={name || symbol}
           width={size}
           height={size}
-          className="object-contain p-1"
+          className="object-contain p-1.5"
           unoptimized
-          onError={() => setImgError(true)}
+          onError={() => setImgError(prev => prev + 1)}
         />
       </div>
     );

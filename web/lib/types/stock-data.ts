@@ -151,6 +151,9 @@ export interface AggregatedStockData {
   technicals: TechnicalIndicators;
   sentiment: SentimentData;
 
+  // Historical OHLCV for charts
+  historical?: Array<{ date: string; open: number; high: number; low: number; close: number; volume: number }>;
+
   // Market-specific
   indiaSpecific?: IndiaSpecificData;
 

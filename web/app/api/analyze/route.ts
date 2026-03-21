@@ -33,12 +33,14 @@ export async function GET(request: NextRequest) {
   try {
     // Quick analysis - minimal data for fast loading
     if (type === 'quick') {
-      console.log(`Quick analysis for ${symbol}...`);
+      const days = parseInt(searchParams.get('days') || '30', 10);
+      const historicalDays = Math.min(Math.max(days, 7), 3650); // Clamp 7-3650
+      console.log(`Quick analysis for ${symbol} (${historicalDays} days)...`);
       const marketData = await collectStockData(symbol, {
         includeTechnicals: true,
-        includeFundamentals: false, // Skip for quick - speeds up significantly
-        includeIndiaSpecific: true,
-        historicalDays: 30, // Reduced from 90 for faster load
+        includeFundamentals: false,
+        includeIndiaSpecific: historicalDays <= 90, // Skip India-specific for chart-only fetches
+        historicalDays,
         userId,
       });
 
@@ -51,6 +53,7 @@ export async function GET(request: NextRequest) {
         price: marketData.price,
         fundamentals: marketData.fundamentals,
         technicals: marketData.technicals,
+        historical: marketData.historical,
         indiaSpecific: marketData.indiaSpecific,
         dataQuality: marketData.dataQuality,
         message: 'Quick analysis complete. Use "deep" analysis for AI-powered insights.'
