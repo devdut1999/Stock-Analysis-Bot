@@ -103,28 +103,38 @@ export default function Navbar() {
   }, [showSuggestions, suggestions, selectedIndex, navigateToStock]);
 
   return (
-    <nav className="sticky top-0 z-50 glass border-b border-white/20">
+    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-14 gap-4">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-3 shrink-0 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:shadow-indigo-500/40 transition-shadow">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <a href="/" className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
-            <span className="text-xl font-bold gradient-text tracking-tight">
-              Nivesh AI
-            </span>
-            <span className="hidden sm:inline text-[10px] bg-gradient-to-r from-orange-500 to-amber-500 text-white px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider shadow-sm">
-              NSE/BSE
+            <span className="text-lg font-bold text-slate-900">
+              Nivesh
             </span>
           </a>
 
+          {/* Nav links - Groww style */}
+          <div className="hidden md:flex items-center gap-1">
+            <a href="/" className="text-sm font-medium text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+              Explore
+            </a>
+            <a href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+              Watchlist
+            </a>
+            <a href="/integrations" className="text-sm font-medium text-slate-500 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+              Integrations
+            </a>
+          </div>
+
           {/* Search */}
-          <div className="relative flex-1 max-w-xl">
+          <div className="relative flex-1 max-w-md">
             <div className="relative">
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -134,51 +144,52 @@ export default function Navbar() {
                 onChange={(e) => setQuery(e.target.value.toUpperCase())}
                 onKeyDown={handleKeyDown}
                 onFocus={() => query.length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="Search stocks... (RELIANCE, TCS, INFY)"
-                className="w-full pl-11 pr-4 py-2.5 text-sm rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+                placeholder="Search stocks..."
+                className="w-full pl-10 pr-10 py-2 text-sm rounded-lg bg-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all"
                 autoComplete="off"
               />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">⌘K</span>
             </div>
 
             {showSuggestions && suggestions.length > 0 && (
               <div
                 ref={dropdownRef}
-                className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl shadow-slate-200/50 max-h-80 overflow-y-auto"
+                className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-80 overflow-y-auto"
               >
                 {suggestions.map((stock, index) => (
                   <button
                     key={stock.symbol}
                     type="button"
                     onClick={() => navigateToStock(stock)}
-                    className={`w-full px-4 py-3 text-left flex items-center justify-between transition-all text-sm ${
-                      index === selectedIndex ? 'bg-indigo-50' : 'hover:bg-slate-50'
-                    } ${index !== suggestions.length - 1 ? 'border-b border-slate-100' : ''} ${index === 0 ? 'rounded-t-2xl' : ''} ${index === suggestions.length - 1 ? 'rounded-b-2xl' : ''}`}
+                    className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-all text-sm ${
+                      index === selectedIndex ? 'bg-slate-50' : 'hover:bg-slate-50'
+                    } ${index !== suggestions.length - 1 ? 'border-b border-slate-100' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-indigo-600 min-w-[70px]">{stock.symbol}</span>
-                      <span className="text-slate-600 truncate">{stock.name}</span>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold">
+                      {stock.symbol.charAt(0)}
                     </div>
-                    {stock.sector && (
-                      <span className="text-[10px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full ml-2 whitespace-nowrap uppercase tracking-wider font-medium">
-                        {stock.sector}
-                      </span>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-900">{stock.symbol}</p>
+                      <p className="text-xs text-slate-400 truncate">{stock.name}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Nav links */}
-          <div className="hidden md:flex items-center gap-2 shrink-0">
-            <a href="/" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-indigo-50">
-              Dashboard
-            </a>
-            <a href="/integrations" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-indigo-50">
-              Integrations
-            </a>
+          {/* Right side */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </button>
+            <AuthButton />
           </div>
-          <AuthButton />
         </div>
       </div>
     </nav>
