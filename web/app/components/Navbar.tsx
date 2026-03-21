@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { INDIAN_STOCKS, StockInfo } from '../../lib/data/indian-stocks';
-import AuthButton from './AuthButton';
 
-function fuzzySearch(query: string, stocks: StockInfo[], limit = 8): StockInfo[] {
+function fuzzySearch(query: string, stocks: StockInfo[], limit = 6): StockInfo[] {
   if (!query.trim()) return [];
   const searchTerm = query.toUpperCase().trim();
   const results: { stock: StockInfo; score: number }[] = [];
@@ -20,13 +20,6 @@ function fuzzySearch(query: string, stocks: StockInfo[], limit = 8): StockInfo[]
     else if (symbolUpper.includes(searchTerm)) score = 200;
     else if (nameUpper.startsWith(searchTerm)) score = 150;
     else if (nameUpper.includes(searchTerm)) score = 100;
-    else {
-      let queryIdx = 0;
-      for (let i = 0; i < symbolUpper.length && queryIdx < searchTerm.length; i++) {
-        if (symbolUpper[i] === searchTerm[queryIdx]) queryIdx++;
-      }
-      if (queryIdx === searchTerm.length) score = 50;
-    }
 
     if (score > 0) results.push({ stock, score });
   }
@@ -103,39 +96,42 @@ export default function Navbar() {
   }, [showSuggestions, suggestions, selectedIndex, navigateToStock]);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 gap-4">
+    <nav className="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8">
+              <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="8" fill="#5367ff"/>
+                <path d="M8 20L12 16L16 18L24 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 10H24V14" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="text-lg font-bold text-slate-900">
-              Nivesh
-            </span>
-          </a>
+            <span className="text-[18px] font-bold text-[#1a1a1a]">Nivesh</span>
+          </Link>
 
-          {/* Nav links - Groww style */}
+          {/* Nav Links */}
           <div className="hidden md:flex items-center gap-1">
-            <a href="/" className="text-sm font-medium text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+            <Link href="/" className="px-4 py-2 text-[14px] font-medium text-[#1a1a1a] hover:bg-[#f7f7f7] rounded-lg transition-colors">
               Explore
-            </a>
-            <a href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+            </Link>
+            <Link href="/" className="px-4 py-2 text-[14px] font-medium text-[#666] hover:bg-[#f7f7f7] rounded-lg transition-colors">
               Watchlist
-            </a>
-            <a href="/integrations" className="text-sm font-medium text-slate-500 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+            </Link>
+            <Link href="/" className="px-4 py-2 text-[14px] font-medium text-[#666] hover:bg-[#f7f7f7] rounded-lg transition-colors">
+              Orders
+            </Link>
+            <Link href="/integrations" className="px-4 py-2 text-[14px] font-medium text-[#666] hover:bg-[#f7f7f7] rounded-lg transition-colors">
               Integrations
-            </a>
+            </Link>
           </div>
 
           {/* Search */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 max-w-sm mx-4">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#999]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 ref={inputRef}
@@ -144,37 +140,33 @@ export default function Navbar() {
                 onChange={(e) => setQuery(e.target.value.toUpperCase())}
                 onKeyDown={handleKeyDown}
                 onFocus={() => query.length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="Search stocks..."
-                className="w-full pl-10 pr-10 py-2 text-sm rounded-lg bg-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all"
+                placeholder="Search..."
+                className="w-full pl-9 pr-3 py-2 text-[14px] rounded-lg bg-[#f7f7f7] text-[#1a1a1a] placeholder-[#999] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5367ff] transition-all"
                 autoComplete="off"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">⌘K</span>
             </div>
 
             {showSuggestions && suggestions.length > 0 && (
               <div
                 ref={dropdownRef}
-                className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-80 overflow-y-auto"
+                className="absolute z-50 w-full mt-1 bg-white border border-[#e5e5e5] rounded-lg shadow-lg overflow-hidden"
               >
                 {suggestions.map((stock, index) => (
                   <button
                     key={stock.symbol}
                     type="button"
                     onClick={() => navigateToStock(stock)}
-                    className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-all text-sm ${
-                      index === selectedIndex ? 'bg-slate-50' : 'hover:bg-slate-50'
-                    } ${index !== suggestions.length - 1 ? 'border-b border-slate-100' : ''}`}
+                    className={`w-full px-3 py-2.5 text-left flex items-center gap-3 transition-colors ${
+                      index === selectedIndex ? 'bg-[#f7f7f7]' : 'hover:bg-[#f7f7f7]'
+                    } ${index !== suggestions.length - 1 ? 'border-b border-[#f0f0f0]' : ''}`}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold">
-                      {stock.symbol.charAt(0)}
+                    <div className="w-8 h-8 rounded-full bg-[#f0f0f0] flex items-center justify-center text-[11px] font-semibold text-[#666]">
+                      {stock.symbol.slice(0, 2)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900">{stock.symbol}</p>
-                      <p className="text-xs text-slate-400 truncate">{stock.name}</p>
+                      <p className="text-[13px] font-medium text-[#1a1a1a]">{stock.symbol}</p>
+                      <p className="text-[11px] text-[#999] truncate">{stock.name}</p>
                     </div>
-                    <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
                   </button>
                 ))}
               </div>
@@ -182,13 +174,15 @@ export default function Navbar() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+          <div className="flex items-center gap-2">
+            <button className="p-2 text-[#666] hover:bg-[#f7f7f7] rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </button>
-            <AuthButton />
+            <div className="w-8 h-8 rounded-full bg-[#5367ff] flex items-center justify-center text-white text-[13px] font-semibold cursor-pointer">
+              U
+            </div>
           </div>
         </div>
       </div>

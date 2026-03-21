@@ -21,36 +21,34 @@ interface StockMover {
   sector?: string;
 }
 
-type Category = 'most_bought' | 'top_gainers' | 'top_losers' | '52w_high' | '52w_low';
-
-const CATEGORIES: { id: Category; label: string }[] = [
-  { id: 'most_bought', label: 'Most Bought on Nivesh' },
-  { id: 'top_gainers', label: 'Top Gainers' },
-  { id: 'top_losers', label: 'Top Losers' },
-  { id: '52w_high', label: '52 Week High' },
-  { id: '52w_low', label: '52 Week Low' },
+const PRODUCTS = [
+  { name: 'Stocks', icon: '📈', desc: 'Invest in companies', href: '/' },
+  { name: 'Mutual Funds', icon: '📊', desc: 'Diversified portfolios', href: '/' },
+  { name: 'F&O', icon: '⚡', desc: 'Futures & Options', href: '/' },
+  { name: 'IPO', icon: '🚀', desc: 'New listings', href: '/' },
+  { name: 'Gold', icon: '🥇', desc: 'Digital gold', href: '/' },
+  { name: 'FDs', icon: '🏦', desc: 'Fixed deposits', href: '/' },
 ];
 
 const SECTORS = [
-  { name: 'Technology', icon: '💻', color: 'bg-blue-50 text-blue-600' },
-  { name: 'Banking', icon: '🏦', color: 'bg-emerald-50 text-emerald-600' },
-  { name: 'Auto', icon: '🚗', color: 'bg-orange-50 text-orange-600' },
-  { name: 'Pharma', icon: '💊', color: 'bg-pink-50 text-pink-600' },
-  { name: 'Energy', icon: '⚡', color: 'bg-yellow-50 text-yellow-600' },
-  { name: 'FMCG', icon: '🛒', color: 'bg-purple-50 text-purple-600' },
-  { name: 'Metals', icon: '🔩', color: 'bg-slate-100 text-slate-600' },
-  { name: 'Realty', icon: '🏢', color: 'bg-cyan-50 text-cyan-600' },
+  { name: 'IT', stocks: 45 },
+  { name: 'Banking', stocks: 38 },
+  { name: 'Pharma', stocks: 32 },
+  { name: 'Auto', stocks: 28 },
+  { name: 'FMCG', stocks: 25 },
+  { name: 'Energy', stocks: 22 },
+  { name: 'Metals', stocks: 20 },
+  { name: 'Realty', stocks: 18 },
 ];
 
-export default function Dashboard() {
+export default function ExplorePage() {
   const [indices, setIndices] = useState<MarketIndex[]>([]);
   const [gainers, setGainers] = useState<StockMover[]>([]);
   const [losers, setLosers] = useState<StockMover[]>([]);
-  const [activeCategory, setActiveCategory] = useState<Category>('top_gainers');
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<typeof INDIAN_STOCKS>([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [loading, setLoading] = useState(true);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,7 +60,7 @@ export default function Dashboard() {
       const filtered = INDIAN_STOCKS.filter(
         s => s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
              s.name.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 8);
+      ).slice(0, 6);
       setSearchResults(filtered);
       setShowSearch(true);
     } else {
@@ -104,47 +102,28 @@ export default function Dashboard() {
     }
   };
 
-  const getCategoryStocks = () => {
-    switch (activeCategory) {
-      case 'top_gainers':
-        return gainers;
-      case 'top_losers':
-        return losers;
-      case 'most_bought':
-        return gainers.slice(0, 5);
-      case '52w_high':
-        return gainers.filter(s => s.changePercent > 3);
-      case '52w_low':
-        return losers.filter(s => s.changePercent < -3);
-      default:
-        return gainers;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Indices Bar */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-6 py-2 overflow-x-auto scrollbar-hide">
+    <div className="min-h-screen bg-[#f7f7f7]">
+      {/* Indices Ticker Bar */}
+      <div className="bg-white border-b border-[#e5e5e5]">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center h-10 gap-8 overflow-x-auto scrollbar-hide text-sm">
             {loading ? (
-              <div className="flex gap-6">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="h-3 w-16 bg-slate-100 rounded animate-pulse" />
-                    <div className="h-3 w-12 bg-slate-100 rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2 shrink-0">
+                  <div className="h-3 w-14 bg-gray-100 rounded animate-pulse" />
+                  <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
+                </div>
+              ))
             ) : (
               indices.map(idx => (
                 <div key={idx.symbol} className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-medium text-slate-500">{idx.name}</span>
-                  <span className="text-xs font-semibold text-slate-900">
+                  <span className="text-[#666] font-medium">{idx.name}</span>
+                  <span className="text-[#1a1a1a] font-semibold">
                     {idx.price?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                   </span>
-                  <span className={`text-xs font-semibold ${idx.change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {idx.change >= 0 ? '+' : ''}{idx.changePercent?.toFixed(2)}%
+                  <span className={`font-medium ${idx.change >= 0 ? 'text-[#00b386]' : 'text-[#eb5757]'}`}>
+                    ({idx.change >= 0 ? '+' : ''}{idx.changePercent?.toFixed(2)}%)
                   </span>
                 </div>
               ))
@@ -153,44 +132,40 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search Bar */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Search */}
         <div ref={searchRef} className="relative mb-8">
-          <div className="relative">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <div className="relative max-w-xl">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#999]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search stocks..."
-              className="w-full h-12 pl-12 pr-4 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
+              placeholder="Search stocks, mutual funds, ETFs..."
+              className="w-full h-12 pl-12 pr-4 bg-white border border-[#e5e5e5] rounded-lg text-[15px] text-[#1a1a1a] placeholder-[#999] focus:outline-none focus:border-[#5367ff] focus:ring-1 focus:ring-[#5367ff] transition-all"
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
-              ⌘K
-            </div>
           </div>
 
-          {/* Search Results Dropdown */}
           {showSearch && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-              {searchResults.map(stock => (
+            <div className="absolute top-full left-0 max-w-xl w-full mt-1 bg-white border border-[#e5e5e5] rounded-lg shadow-lg z-50 overflow-hidden">
+              {searchResults.map((stock, i) => (
                 <Link
                   key={stock.symbol}
                   href={`/stock/${stock.symbol}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                  className={`flex items-center gap-3 px-4 py-3 hover:bg-[#f7f7f7] transition-colors ${i !== searchResults.length - 1 ? 'border-b border-[#f0f0f0]' : ''}`}
                   onClick={() => setShowSearch(false)}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                    {stock.symbol.charAt(0)}
+                  <div className="w-10 h-10 rounded-full bg-[#f0f0f0] flex items-center justify-center text-[#666] text-sm font-semibold">
+                    {stock.symbol.slice(0, 2)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">{stock.symbol}</p>
-                    <p className="text-xs text-slate-400 truncate">{stock.name}</p>
+                  <div className="flex-1">
+                    <p className="text-[15px] font-medium text-[#1a1a1a]">{stock.name}</p>
+                    <p className="text-[13px] text-[#999]">{stock.symbol} • NSE</p>
                   </div>
-                  <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg className="w-5 h-5 text-[#ccc]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
               ))}
@@ -198,136 +173,116 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Category Tabs */}
-        <div className="mb-6">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-all ${
-                  activeCategory === cat.id
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Stock Cards - Horizontal Scroll */}
-        <div className="mb-8">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
-            {loading ? (
-              [...Array(6)].map((_, i) => (
-                <div key={i} className="w-[200px] shrink-0 bg-white rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 animate-pulse" />
-                    <div>
-                      <div className="h-4 w-16 bg-slate-100 rounded animate-pulse mb-1" />
-                      <div className="h-3 w-24 bg-slate-100 rounded animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="h-5 w-20 bg-slate-100 rounded animate-pulse" />
-                </div>
-              ))
-            ) : (
-              getCategoryStocks().map(stock => (
-                <Link
-                  key={stock.symbol}
-                  href={`/stock/${stock.symbol}`}
-                  className="w-[200px] shrink-0 bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
-                      {stock.symbol.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">{stock.symbol}</p>
-                      <p className="text-xs text-slate-400 truncate">{stock.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-slate-900">
-                      ₹{stock.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                    </span>
-                    <span className={`text-sm font-semibold ${stock.changePercent >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent?.toFixed(2)}%
-                    </span>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Sectors */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Explore by Sector</h2>
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-            {SECTORS.map(sector => (
-              <button
-                key={sector.name}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl ${sector.color} hover:opacity-80 transition-opacity`}
-              >
-                <span className="text-2xl">{sector.icon}</span>
-                <span className="text-xs font-medium">{sector.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Two Column: Gainers & Losers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <StockTable 
-            title="Top Gainers" 
-            stocks={gainers} 
-            loading={loading}
-            isGainer={true}
-          />
-          <StockTable 
-            title="Top Losers" 
-            stocks={losers} 
-            loading={loading}
-            isGainer={false}
-          />
-        </div>
-
-        {/* All Stocks Grid */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">All Stocks</h2>
-            <Link href="/stocks" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
-              View All →
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {INDIAN_STOCKS.slice(0, 20).map(stock => (
+        {/* Products */}
+        <section className="mb-8">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {PRODUCTS.map(product => (
               <Link
-                key={stock.symbol}
-                href={`/stock/${stock.symbol}`}
-                className="bg-white rounded-xl border border-slate-200 p-3 hover:border-slate-300 hover:shadow-sm transition-all"
+                key={product.name}
+                href={product.href}
+                className="flex items-center gap-3 px-4 py-3 bg-white border border-[#e5e5e5] rounded-xl hover:border-[#d0d0d0] transition-colors shrink-0 min-w-[160px]"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold">
-                    {stock.symbol.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{stock.symbol}</p>
-                  </div>
+                <span className="text-2xl">{product.icon}</span>
+                <div>
+                  <p className="text-[14px] font-semibold text-[#1a1a1a]">{product.name}</p>
+                  <p className="text-[12px] text-[#999]">{product.desc}</p>
                 </div>
-                <p className="text-xs text-slate-400 truncate">{stock.name}</p>
               </Link>
             ))}
           </div>
-        </div>
+        </section>
+
+        {/* Most Bought */}
+        <StockSection
+          title="Most Bought on Nivesh"
+          stocks={gainers.slice(0, 6)}
+          loading={loading}
+          viewAllHref="/stocks?filter=popular"
+        />
+
+        {/* Top Gainers */}
+        <StockSection
+          title="Top Gainers"
+          stocks={gainers}
+          loading={loading}
+          viewAllHref="/stocks?filter=gainers"
+          showChange
+        />
+
+        {/* Top Losers */}
+        <StockSection
+          title="Top Losers"
+          stocks={losers}
+          loading={loading}
+          viewAllHref="/stocks?filter=losers"
+          showChange
+        />
+
+        {/* Explore Sectors */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[18px] font-semibold text-[#1a1a1a]">Explore Sectors</h2>
+            <Link href="/sectors" className="text-[14px] font-medium text-[#5367ff] hover:underline">
+              See all
+            </Link>
+          </div>
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+            {SECTORS.map(sector => (
+              <Link
+                key={sector.name}
+                href={`/stocks?sector=${sector.name.toLowerCase()}`}
+                className="flex flex-col items-center gap-2 p-4 bg-white border border-[#e5e5e5] rounded-xl hover:border-[#d0d0d0] transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#f0f0f0] flex items-center justify-center text-[14px] font-semibold text-[#666]">
+                  {sector.name.slice(0, 2)}
+                </div>
+                <p className="text-[13px] font-medium text-[#1a1a1a]">{sector.name}</p>
+                <p className="text-[11px] text-[#999]">{sector.stocks} stocks</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* All Stocks */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[18px] font-semibold text-[#1a1a1a]">All Stocks</h2>
+            <Link href="/stocks" className="text-[14px] font-medium text-[#5367ff] hover:underline">
+              See all
+            </Link>
+          </div>
+          <div className="bg-white border border-[#e5e5e5] rounded-xl overflow-hidden">
+            <div className="grid grid-cols-[1fr_100px_80px] gap-4 px-4 py-3 text-[12px] text-[#999] font-medium border-b border-[#f0f0f0] bg-[#fafafa]">
+              <span>Company</span>
+              <span className="text-right">Price</span>
+              <span className="text-right">Change</span>
+            </div>
+            {INDIAN_STOCKS.slice(0, 10).map((stock, i) => (
+              <Link
+                key={stock.symbol}
+                href={`/stock/${stock.symbol}`}
+                className={`grid grid-cols-[1fr_100px_80px] gap-4 px-4 py-3 items-center hover:bg-[#fafafa] transition-colors ${i !== 9 ? 'border-b border-[#f0f0f0]' : ''}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#f0f0f0] flex items-center justify-center text-[12px] font-semibold text-[#666]">
+                    {stock.symbol.slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-medium text-[#1a1a1a]">{stock.symbol}</p>
+                    <p className="text-[12px] text-[#999] truncate max-w-[200px]">{stock.name}</p>
+                  </div>
+                </div>
+                <span className="text-[14px] font-medium text-[#1a1a1a] text-right">—</span>
+                <span className="text-[13px] font-medium text-[#999] text-right">—</span>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {/* Footer */}
-        <footer className="pt-6 border-t border-slate-200 text-center">
-          <p className="text-xs text-slate-400">
-            Nivesh AI · NSE/BSE Market Data · Not financial advice
+        <footer className="py-6 text-center border-t border-[#e5e5e5]">
+          <p className="text-[13px] text-[#999]">
+            Nivesh AI • NSE/BSE Market Data • Not financial advice
           </p>
         </footer>
       </div>
@@ -335,69 +290,74 @@ export default function Dashboard() {
   );
 }
 
-function StockTable({ 
+function StockSection({ 
   title, 
   stocks, 
-  loading,
-  isGainer 
+  loading, 
+  viewAllHref,
+  showChange = false
 }: { 
   title: string; 
   stocks: StockMover[]; 
   loading: boolean;
-  isGainer: boolean;
+  viewAllHref: string;
+  showChange?: boolean;
 }) {
+  const isGainer = title.includes('Gainer') || title.includes('Bought');
+  
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-        <Link href={`/stocks?filter=${isGainer ? 'gainers' : 'losers'}`} className="text-xs text-indigo-600 font-medium">
-          See All
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-[18px] font-semibold text-[#1a1a1a]">{title}</h2>
+        <Link href={viewAllHref} className="text-[14px] font-medium text-[#5367ff] hover:underline">
+          See all
         </Link>
       </div>
       
-      {loading ? (
-        <div className="p-4 space-y-3">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 animate-pulse" />
-                <div className="h-4 w-20 bg-slate-100 rounded animate-pulse" />
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+        {loading ? (
+          [...Array(6)].map((_, i) => (
+            <div key={i} className="w-[180px] shrink-0 bg-white border border-[#e5e5e5] rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gray-100 animate-pulse" />
+                <div className="flex-1">
+                  <div className="h-4 w-16 bg-gray-100 rounded animate-pulse mb-1" />
+                  <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+                </div>
               </div>
-              <div className="h-4 w-16 bg-slate-100 rounded animate-pulse" />
+              <div className="h-5 w-20 bg-gray-100 rounded animate-pulse" />
             </div>
-          ))}
-        </div>
-      ) : (
-        <div>
-          {stocks.slice(0, 5).map((stock, i) => (
+          ))
+        ) : (
+          stocks.map(stock => (
             <Link
               key={stock.symbol}
               href={`/stock/${stock.symbol}`}
-              className={`flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors ${
-                i !== Math.min(stocks.length, 5) - 1 ? 'border-b border-slate-50' : ''
-              }`}
+              className="w-[180px] shrink-0 bg-white border border-[#e5e5e5] rounded-xl p-4 hover:border-[#d0d0d0] hover:shadow-sm transition-all"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold">
-                  {stock.symbol.charAt(0)}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-[#f0f0f0] flex items-center justify-center text-[12px] font-semibold text-[#666]">
+                  {stock.symbol.slice(0, 2)}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{stock.symbol}</p>
-                  <p className="text-xs text-slate-400">{stock.name?.slice(0, 20)}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">{stock.symbol}</p>
+                  <p className="text-[12px] text-[#999] truncate">{stock.name}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[16px] font-semibold text-[#1a1a1a]">
                   ₹{stock.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                </p>
-                <p className={`text-xs font-semibold ${isGainer ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent?.toFixed(2)}%
-                </p>
+                </span>
+                {showChange && (
+                  <span className={`text-[13px] font-medium ${isGainer ? 'text-[#00b386]' : 'text-[#eb5757]'}`}>
+                    {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent?.toFixed(2)}%
+                  </span>
+                )}
               </div>
             </Link>
-          ))}
-        </div>
-      )}
-    </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
