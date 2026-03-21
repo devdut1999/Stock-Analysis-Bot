@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Navbar from "./components/Navbar";
 
 export const metadata: Metadata = {
-  title: "Stock Analysis Bot - AI-Powered Market Intelligence",
-  description: "Multi-agent AI system for comprehensive stock analysis with technical, fundamental, and risk assessment",
+  title: "StockBot - Indian Stock Market Intelligence",
+  description: "AI-powered Indian stock analysis with 10 specialized agents, VCP screening, options strategies, and more",
 };
 
 export default function RootLayout({
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased bg-gray-50">
+        <Navbar />
         {children}
       </body>
     </html>
