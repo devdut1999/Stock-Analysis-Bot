@@ -102,15 +102,15 @@ export default function Navbar() {
   }, [showSuggestions, suggestions, selectedIndex, navigateToStock]);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-[#1a1d29]/80 backdrop-blur-xl border-b border-[#2a2e3f]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-14 gap-4">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 shrink-0">
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <a href="/" className="flex items-center gap-2.5 shrink-0">
+            <span className="text-lg font-bold text-white tracking-tight">
               StockBot
             </span>
-            <span className="hidden sm:inline text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+            <span className="hidden sm:inline text-[10px] bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
               NSE/BSE
             </span>
           </a>
@@ -118,7 +118,7 @@ export default function Navbar() {
           {/* Search */}
           <div className="relative flex-1 max-w-xl">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5d6178]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -129,7 +129,7 @@ export default function Navbar() {
                 onKeyDown={handleKeyDown}
                 onFocus={() => query.length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
                 placeholder="Search stocks... (RELIANCE, TCS, INFY)"
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
+                className="w-full pl-10 pr-4 py-2 text-sm rounded-full bg-[#0f1117] border border-[#2a2e3f] text-[#e1e4ea] placeholder-[#5d6178] focus:outline-none focus:border-[#3b82f6] focus:ring-2 focus:ring-[#3b82f6]/20 transition-all"
                 autoComplete="off"
               />
             </div>
@@ -137,23 +137,23 @@ export default function Navbar() {
             {showSuggestions && suggestions.length > 0 && (
               <div
                 ref={dropdownRef}
-                className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 overflow-y-auto"
+                className="absolute z-50 w-full mt-2 bg-[#1a1d29] border border-[#2a2e3f] rounded-xl shadow-2xl shadow-black/40 max-h-80 overflow-y-auto"
               >
                 {suggestions.map((stock, index) => (
                   <button
                     key={stock.symbol}
                     type="button"
                     onClick={() => navigateToStock(stock)}
-                    className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-blue-50 transition-colors text-sm ${
-                      index === selectedIndex ? 'bg-blue-100' : ''
-                    } ${index !== suggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
+                    className={`w-full px-4 py-2.5 text-left flex items-center justify-between transition-colors text-sm ${
+                      index === selectedIndex ? 'bg-[#222636]' : 'hover:bg-[#222636]'
+                    } ${index !== suggestions.length - 1 ? 'border-b border-[#2a2e3f]/50' : ''}`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-blue-600 min-w-[70px]">{stock.symbol}</span>
-                      <span className="text-gray-700 truncate">{stock.name}</span>
+                      <span className="font-bold text-[#3b82f6] min-w-[70px]">{stock.symbol}</span>
+                      <span className="text-[#8b8fa3] truncate">{stock.name}</span>
                     </div>
                     {stock.sector && (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full ml-2 whitespace-nowrap">
+                      <span className="text-[10px] bg-[#222636] text-[#5d6178] px-2 py-0.5 rounded-full ml-2 whitespace-nowrap uppercase tracking-wider">
                         {stock.sector}
                       </span>
                     )}
@@ -165,7 +165,7 @@ export default function Navbar() {
 
           {/* Nav links */}
           <div className="hidden md:flex items-center gap-4 text-sm shrink-0">
-            <a href="/" className="text-gray-600 hover:text-gray-900 font-medium">Dashboard</a>
+            <a href="/" className="text-[#8b8fa3] hover:text-white font-medium transition-colors">Dashboard</a>
           </div>
         </div>
       </div>

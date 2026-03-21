@@ -22,16 +22,34 @@ interface StockMover {
   sector?: string;
 }
 
+function isMarketOpen(): { open: boolean; label: string } {
+  const now = new Date();
+  const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  const day = ist.getDay();
+  const hours = ist.getHours();
+  const minutes = ist.getMinutes();
+  const time = hours * 60 + minutes;
+  const isWeekday = day >= 1 && day <= 5;
+  const inSession = time >= 555 && time <= 930; // 9:15 AM to 3:30 PM
+  if (!isWeekday) return { open: false, label: 'Closed · Weekend' };
+  if (inSession) return { open: true, label: 'Market Open' };
+  if (time < 555) return { open: false, label: 'Pre-market' };
+  return { open: false, label: 'Market Closed' };
+}
+
 export default function Dashboard() {
   const [indices, setIndices] = useState<MarketIndex[]>([]);
   const [gainers, setGainers] = useState<StockMover[]>([]);
   const [losers, setLosers] = useState<StockMover[]>([]);
   const [loadingIndices, setLoadingIndices] = useState(true);
   const [loadingMovers, setLoadingMovers] = useState(true);
+  const [marketStatus, setMarketStatus] = useState(isMarketOpen());
 
   useEffect(() => {
     fetchMarketOverview();
     fetchMarketMovers();
+    const interval = setInterval(() => setMarketStatus(isMarketOpen()), 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchMarketOverview = async () => {
@@ -64,41 +82,60 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Market Overview */}
-      <section className="mb-8">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Market Overview</h2>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Market Status + Indices */}
+      <section>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-base font-semibold text-white">Market Overview</h2>
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${
+            marketStatus.open
+              ? 'bg-[#22c55e]/15 text-[#22c55e]'
+              : 'bg-[#5d6178]/15 text-[#8b8fa3]'
+          }`}>
+            <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${
+              marketStatus.open ? 'bg-[#22c55e] animate-pulse' : 'bg-[#5d6178]'
+            }`} />
+            {marketStatus.label}
+          </span>
+        </div>
+
         {loadingIndices ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-20 mb-3" />
-                <div className="h-8 bg-gray-200 rounded w-32 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-16" />
+              <div key={i} className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-4">
+                <div className="skeleton h-3 w-16 mb-3" />
+                <div className="skeleton h-7 w-28 mb-2" />
+                <div className="skeleton h-4 w-20" />
               </div>
             ))}
           </div>
         ) : indices.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {indices.map(idx => (
-              <div key={idx.symbol} className="bg-white rounded-xl border border-gray-200 p-5">
-                <p className="text-sm text-gray-500 font-medium">{idx.name}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {idx.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                </p>
-                <p className={`text-sm font-semibold mt-1 ${idx.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {idx.change >= 0 ? '+' : ''}{idx.changePercent?.toFixed(2)}%
-                  <span className="text-gray-400 font-normal ml-1">
-                    ({idx.change >= 0 ? '+' : ''}{idx.change?.toFixed(2)})
-                  </span>
-                </p>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {indices.map(idx => {
+              const isUp = idx.change >= 0;
+              return (
+                <div key={idx.symbol} className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-4 hover:border-[#3b82f6]/20 transition-colors">
+                  <p className="text-[11px] text-[#5d6178] font-medium uppercase tracking-wider mb-1">{idx.name}</p>
+                  <div className="flex items-end justify-between">
+                    <p className="text-xl font-bold text-white">
+                      {idx.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </p>
+                    <div className="text-right">
+                      <span className={`text-sm font-semibold ${isUp ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                        {isUp ? '+' : ''}{idx.changePercent?.toFixed(2)}%
+                      </span>
+                      <p className="text-[11px] text-[#5d6178]">
+                        {isUp ? '+' : ''}{idx.change?.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-500">
-            <p className="font-medium mb-1">Market data loading...</p>
-            <p className="text-sm">Market overview API will be available shortly.</p>
+          <div className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-6 text-center text-sm text-[#5d6178]">
+            Market data unavailable
           </div>
         )}
       </section>
@@ -107,83 +144,16 @@ export default function Dashboard() {
       <WatchlistWidget />
 
       {/* Gainers & Losers */}
-      <section className="mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Top Gainers */}
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-green-500">▲</span> Top Gainers
-            </h2>
-            {loadingMovers ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="flex justify-between animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-24" />
-                    <div className="h-4 bg-gray-200 rounded w-16" />
-                  </div>
-                ))}
-              </div>
-            ) : gainers.length > 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-2">
-                {gainers.map(stock => (
-                  <StockCard
-                    key={stock.symbol}
-                    symbol={stock.symbol}
-                    name={stock.name}
-                    price={stock.price}
-                    change={stock.change}
-                    changePercent={stock.changePercent}
-                    compact
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-500 text-sm">
-                Gainers data will appear when market overview API is ready.
-              </div>
-            )}
-          </div>
-
-          {/* Top Losers */}
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-red-500">▼</span> Top Losers
-            </h2>
-            {loadingMovers ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="flex justify-between animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-24" />
-                    <div className="h-4 bg-gray-200 rounded w-16" />
-                  </div>
-                ))}
-              </div>
-            ) : losers.length > 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-2">
-                {losers.map(stock => (
-                  <StockCard
-                    key={stock.symbol}
-                    symbol={stock.symbol}
-                    name={stock.name}
-                    price={stock.price}
-                    change={stock.change}
-                    changePercent={stock.changePercent}
-                    compact
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-500 text-sm">
-                Losers data will appear when market overview API is ready.
-              </div>
-            )}
-          </div>
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <MoverTable title="Top Gainers" icon="▲" iconColor="text-[#22c55e]" stocks={gainers} loading={loadingMovers} />
+          <MoverTable title="Top Losers" icon="▼" iconColor="text-[#ef4444]" stocks={losers} loading={loadingMovers} />
         </div>
       </section>
 
-      {/* Quick Access - Popular Stocks */}
-      <section className="mb-8">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Popular Stocks</h2>
+      {/* Popular Stocks */}
+      <section>
+        <h2 className="text-base font-semibold text-white mb-3">Popular Stocks</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {INDIAN_STOCKS.slice(0, 15).map(stock => (
             <StockCard
@@ -196,29 +166,75 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Features */}
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Features</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { title: '10 AI Agents', desc: 'Buffett, Munger, Ackman, Dalio + technical & risk analysts', color: 'bg-purple-50 border-purple-200' },
-            { title: 'India-Specific', desc: 'FII/DII flows, promoter holdings, F&O data, circuit breakers', color: 'bg-orange-50 border-orange-200' },
-            { title: 'Trading Signals', desc: 'Entry/exit levels, stop loss, position sizing, risk metrics', color: 'bg-blue-50 border-blue-200' },
-            { title: 'VCP + Backtest', desc: 'Volatility Contraction Patterns, strategy backtesting (coming soon)', color: 'bg-green-50 border-green-200' },
-          ].map(f => (
-            <div key={f.title} className={`rounded-xl border p-5 ${f.color}`}>
-              <h3 className="font-semibold text-gray-900 mb-1">{f.title}</h3>
-              <p className="text-xs text-gray-600">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Footer */}
-      <footer className="mt-12 pt-6 border-t border-gray-200 text-center text-xs text-gray-500">
-        <p>Built with Claude Agent SDK | Indian Stock Market Focus (NSE/BSE)</p>
-        <p className="mt-1">For educational purposes only. Not financial advice.</p>
+      <footer className="pt-6 border-t border-[#2a2e3f] text-center text-xs text-[#5d6178]">
+        <p>Indian Stock Market Focus (NSE/BSE) · Not financial advice</p>
       </footer>
+    </div>
+  );
+}
+
+function MoverTable({
+  title, icon, iconColor, stocks, loading,
+}: {
+  title: string;
+  icon: string;
+  iconColor: string;
+  stocks: StockMover[];
+  loading: boolean;
+}) {
+  const isGainer = title.includes('Gainer');
+
+  return (
+    <div>
+      <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+        <span className={iconColor}>{icon}</span> {title}
+      </h2>
+      <div className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] overflow-hidden">
+        {/* Table header */}
+        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2.5 text-[11px] text-[#5d6178] uppercase tracking-wider border-b border-[#2a2e3f]/60 font-medium">
+          <span>Company</span>
+          <span className="text-right w-20">LTP</span>
+          <span className="text-right w-16">Chg%</span>
+        </div>
+        {loading ? (
+          <div className="p-4 space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="flex justify-between">
+                <div className="skeleton h-4 w-28" />
+                <div className="skeleton h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : stocks.length > 0 ? (
+          <div>
+            {stocks.map((stock, i) => (
+              <a
+                key={stock.symbol}
+                href={`/stock/${stock.symbol}`}
+                className={`grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-3 items-center hover:bg-[#222636] transition-colors ${
+                  i !== stocks.length - 1 ? 'border-b border-[#2a2e3f]/40' : ''
+                }`}
+              >
+                <div className="min-w-0">
+                  <span className="font-semibold text-sm text-white">{stock.symbol}</span>
+                  <span className="text-xs text-[#5d6178] ml-2 hidden sm:inline truncate">{stock.name}</span>
+                </div>
+                <span className="text-sm font-medium text-[#e1e4ea] text-right w-20">
+                  ₹{stock.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                </span>
+                <span className={`text-sm font-semibold text-right w-16 ${isGainer ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                  {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent?.toFixed(2)}%
+                </span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 text-center text-sm text-[#5d6178]">
+            No data available
+          </div>
+        )}
+      </div>
     </div>
   );
 }

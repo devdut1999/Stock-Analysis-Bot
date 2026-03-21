@@ -29,7 +29,6 @@ export default function WatchlistWidget() {
   const fetchPrices = async () => {
     setLoading(true);
     try {
-      // Fetch quick data for each symbol in parallel
       const results = await Promise.allSettled(
         symbols.map(async (sym) => {
           const res = await fetch(`/api/analyze?symbol=${sym}&type=quick`);
@@ -61,12 +60,12 @@ export default function WatchlistWidget() {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900">Watchlist</h2>
-        <span className="text-xs text-gray-500">{symbols.length} stocks</span>
+        <h2 className="text-lg font-semibold text-white">Watchlist</h2>
+        <span className="text-xs text-[#5d6178]">{symbols.length} stocks</span>
       </div>
-      <div className="bg-white rounded-xl border border-gray-200 p-2">
+      <div className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-2">
         {loading && stocks.length === 0 ? (
-          <div className="p-4 text-center text-sm text-gray-500">Loading watchlist...</div>
+          <div className="p-4 text-center text-sm text-[#5d6178]">Loading watchlist...</div>
         ) : (
           stocks.map(stock => (
             <div key={stock.symbol} className="flex items-center">
@@ -82,10 +81,10 @@ export default function WatchlistWidget() {
               </div>
               <button
                 onClick={() => remove(stock.symbol)}
-                className="text-gray-400 hover:text-red-500 px-2 text-xs"
+                className="text-[#5d6178] hover:text-[#ef4444] px-2 text-xs transition-colors"
                 title="Remove from watchlist"
               >
-                x
+                ✕
               </button>
             </div>
           ))
