@@ -84,10 +84,10 @@ export default function Dashboard() {
       {/* Hero Section */}
       <section className="text-center py-6">
         <h1 className="text-4xl font-bold text-slate-900 mb-3">
-          Indian Stock Market <span className="gradient-text">Intelligence</span>
+          Smart Stock <span className="gradient-text">Analysis</span>
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-          AI-powered analysis with 10 specialized agents for smarter trading decisions
+          Real-time NSE/BSE data with technical indicators and AI-powered insights
         </p>
       </section>
 
@@ -179,7 +179,7 @@ export default function Dashboard() {
       {/* Footer */}
       <footer className="pt-8 border-t border-slate-200 text-center">
         <p className="text-sm text-slate-400">
-          Indian Stock Market Focus (NSE/BSE) · Not financial advice
+          Nivesh AI · NSE/BSE Market Data · Not financial advice
         </p>
       </footer>
     </div>

@@ -11,6 +11,23 @@ import { PriceData, FundamentalData } from '../../types/stock-data';
 // Create Yahoo Finance instance
 const yahooFinance = new YahooFinanceClass();
 
+// Simple in-memory cache (5 minute TTL)
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCached<T>(key: string): T | null {
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+    return entry.data as T;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
+
 /**
  * Convert symbol to Yahoo Finance format
  */
@@ -38,6 +55,13 @@ export async function getYahooQuote(
   symbol: string,
   exchange?: 'NSE' | 'BSE'
 ): Promise<PriceData> {
+  const cacheKey = `quote:${symbol}:${exchange}`;
+  const cached = getCached<PriceData>(cacheKey);
+  if (cached) {
+    console.log(`[Yahoo Finance] Cache hit for ${symbol} quote`);
+    return cached;
+  }
+
   await rateLimiter.waitForSlot('yahooFinance');
 
   try {
@@ -60,7 +84,7 @@ export async function getYahooQuote(
       ]
     });
 
-    return {
+    const result: PriceData = {
       symbol: symbol.toUpperCase(),
       currentPrice: quote.regularMarketPrice || 0,
       open: quote.regularMarketOpen || 0,
@@ -76,6 +100,9 @@ export async function getYahooQuote(
       fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
       fiftyTwoWeekLow: quote.fiftyTwoWeekLow
     };
+
+    setCache(cacheKey, result);
+    return result;
   } catch (error) {
     if (error instanceof Error) {
       console.warn(`[Yahoo Finance] Failed to fetch quote for ${symbol}: ${error.message}`);
@@ -99,6 +126,13 @@ export async function getYahooHistoricalData(
   close: number;
   volume: number;
 }>> {
+  const cacheKey = `historical:${symbol}:${exchange}:${days}`;
+  const cached = getCached<Array<any>>(cacheKey);
+  if (cached) {
+    console.log(`[Yahoo Finance] Cache hit for ${symbol} historical data`);
+    return cached;
+  }
+
   await rateLimiter.waitForSlot('yahooFinance');
 
   try {
@@ -114,7 +148,7 @@ export async function getYahooHistoricalData(
       interval: '1d'
     });
 
-    return result.map((candle: any) => ({
+    const data = result.map((candle: any) => ({
       date: candle.date,
       open: candle.open,
       high: candle.high,
@@ -122,6 +156,9 @@ export async function getYahooHistoricalData(
       close: candle.close,
       volume: candle.volume
     }));
+
+    setCache(cacheKey, data);
+    return data;
   } catch (error) {
     if (error instanceof Error) {
       console.warn(`[Yahoo Finance] Failed to fetch historical data for ${symbol}: ${error.message}`);

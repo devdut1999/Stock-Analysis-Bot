@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "StockBot - Indian Stock Market Intelligence",
-  description: "AI-powered Indian stock analysis with 10 specialized agents, VCP screening, options strategies, and more",
+  title: "Nivesh AI - Smart Indian Stock Analysis",
+  description: "AI-powered stock analysis for NSE/BSE with technical indicators, fundamental data, and trading signals",
 };
 
 export default function RootLayout({

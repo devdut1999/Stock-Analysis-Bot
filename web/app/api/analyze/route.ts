@@ -20,17 +20,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Phase 1: Collect market data (no API key needed)
-    console.log(`Collecting data for ${symbol}...`);
-    const marketData = await collectStockData(symbol, {
-      includeTechnicals: true,
-      includeFundamentals: type === 'deep',
-      includeIndiaSpecific: true, // Indian market focus
-      historicalDays: 90
-    });
-
-    // Quick analysis - return just the market data
+    // Quick analysis - minimal data for fast loading
     if (type === 'quick') {
+      console.log(`Quick analysis for ${symbol}...`);
+      const marketData = await collectStockData(symbol, {
+        includeTechnicals: true,
+        includeFundamentals: false, // Skip for quick - speeds up significantly
+        includeIndiaSpecific: true,
+        historicalDays: 30 // Reduced from 90 for faster load
+      });
+
       return NextResponse.json({
         success: true,
         type: 'quick',
@@ -45,6 +44,15 @@ export async function GET(request: NextRequest) {
         message: 'Quick analysis complete. Use "deep" analysis for AI-powered insights.'
       });
     }
+
+    // Deep analysis - full data collection
+    console.log(`Collecting full data for ${symbol}...`);
+    const marketData = await collectStockData(symbol, {
+      includeTechnicals: true,
+      includeFundamentals: true,
+      includeIndiaSpecific: true,
+      historicalDays: 90
+    });
 
     // Phase 2: Deep analysis with 10 AI agents (requires API key)
     const apiKey = process.env.ANTHROPIC_API_KEY;

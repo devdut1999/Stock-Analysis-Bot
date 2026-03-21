@@ -10,5 +10,9 @@
       "Bash(vercel inspect:*)",
       "Bash(vercel ls:*)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "vercel"
+  ],
+  "enableAllProjectMcpServers": true
 }

@@ -113,7 +113,7 @@ export default function Navbar() {
               </svg>
             </div>
             <span className="text-xl font-bold gradient-text tracking-tight">
-              StockBot
+              Nivesh AI
             </span>
             <span className="hidden sm:inline text-[10px] bg-gradient-to-r from-orange-500 to-amber-500 text-white px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider shadow-sm">
               NSE/BSE
