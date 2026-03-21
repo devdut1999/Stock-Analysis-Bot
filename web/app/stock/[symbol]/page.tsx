@@ -8,6 +8,7 @@ import Link from 'next/link';
 import StockChart from '../../components/StockChart';
 import TradingPanel from '../../components/TradingPanel';
 import AnimatedTabs, { TabContent } from '../../components/AnimatedTabs';
+import StockLogo from '../../components/StockLogo';
 
 type TabId = 'overview' | 'technical' | 'fundamental' | 'fno' | 'news' | 'signal';
 
@@ -88,9 +89,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
             <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-4 shadow-sm">
               <div className="flex items-start gap-4">
                 {/* Stock Logo */}
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0">
-                  {symbol.charAt(0)}
-                </div>
+                <StockLogo symbol={symbol.toUpperCase()} name={stockInfo?.name} size={56} showRealLogo />
                 
                 <div className="flex-1 min-w-0">
                   {/* Symbol & Exchange Row */}
