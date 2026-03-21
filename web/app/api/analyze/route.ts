@@ -20,23 +20,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json({
-        error: 'ANTHROPIC_API_KEY not configured',
-        message: 'Please add ANTHROPIC_API_KEY to your Vercel environment variables',
-        symbol: symbol.toUpperCase(),
-        type
-      }, { status: 500 });
-    }
-
-    // Phase 1: Collect market data
+    // Phase 1: Collect market data (no API key needed)
     console.log(`Collecting data for ${symbol}...`);
     const marketData = await collectStockData(symbol, {
       includeTechnicals: true,
       includeFundamentals: type === 'deep',
-      includeIndiaSpecific: symbol.includes('.NS') || symbol.includes('.BO'),
+      includeIndiaSpecific: true, // Indian market focus
       historicalDays: 90
     });
 
@@ -57,7 +46,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Phase 2: Deep analysis with 10 AI agents
+    // Phase 2: Deep analysis with 10 AI agents (requires API key)
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({
+        error: 'AI analysis requires ANTHROPIC_API_KEY',
+        message: 'Deep analysis is not available. Market data is shown above.',
+        symbol: symbol.toUpperCase(),
+        type
+      }, { status: 500 });
+    }
     console.log(`Running deep analysis for ${symbol}...`);
     const analysis = await orchestrateAnalysis(marketData);
 

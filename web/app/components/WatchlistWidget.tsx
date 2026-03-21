@@ -50,7 +50,7 @@ export default function WatchlistWidget() {
           .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
           .map(r => r.value as WatchlistStock)
       );
-    } catch { /* ignore */ } finally {
+    } catch { } finally {
       setLoading(false);
     }
   };
@@ -60,15 +60,17 @@ export default function WatchlistWidget() {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">Watchlist</h2>
-        <span className="text-xs text-[#5d6178]">{symbols.length} stocks</span>
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="text-amber-500">★</span> Watchlist
+        </h2>
+        <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{symbols.length} stocks</span>
       </div>
-      <div className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-2">
+      <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm">
         {loading && stocks.length === 0 ? (
-          <div className="p-4 text-center text-sm text-[#5d6178]">Loading watchlist...</div>
+          <div className="p-6 text-center text-sm text-slate-400">Loading watchlist...</div>
         ) : (
           stocks.map(stock => (
-            <div key={stock.symbol} className="flex items-center">
+            <div key={stock.symbol} className="flex items-center group">
               <div className="flex-1">
                 <StockCard
                   symbol={stock.symbol}
@@ -81,7 +83,7 @@ export default function WatchlistWidget() {
               </div>
               <button
                 onClick={() => remove(stock.symbol)}
-                className="text-[#5d6178] hover:text-[#ef4444] px-2 text-xs transition-colors"
+                className="text-slate-300 hover:text-red-500 px-3 text-sm transition-colors opacity-0 group-hover:opacity-100"
                 title="Remove from watchlist"
               >
                 ✕

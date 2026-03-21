@@ -25,18 +25,18 @@ export default function StockCard({
     return (
       <Link
         href={`/stock/${symbol}`}
-        className="flex items-center justify-between px-3 py-2.5 hover:bg-[#222636] rounded-lg transition-colors"
+        className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 rounded-xl transition-colors"
       >
         <div className="min-w-0">
-          <span className="font-semibold text-sm text-white">{symbol}</span>
-          <span className="text-xs text-[#5d6178] ml-2 truncate">{name}</span>
+          <span className="font-bold text-sm text-slate-900">{symbol}</span>
+          <span className="text-xs text-slate-400 ml-2 truncate">{name}</span>
         </div>
         <div className="text-right shrink-0 ml-3">
           {price != null && (
-            <div className="text-sm font-medium text-[#e1e4ea]">₹{price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+            <div className="text-sm font-semibold text-slate-700">₹{price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
           )}
           {changePercent != null && (
-            <div className={`text-xs font-medium ${isPositive ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+            <div className={`text-xs font-bold px-1.5 py-0.5 rounded ${isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
               {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
             </div>
           )}
@@ -48,26 +48,26 @@ export default function StockCard({
   return (
     <Link
       href={`/stock/${symbol}`}
-      className="block bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-4 hover:bg-[#222636] hover:border-[#3b82f6]/25 transition-all"
+      className="block bg-white rounded-2xl border border-slate-200 p-5 card-hover shadow-sm"
     >
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-bold text-white">{symbol}</h3>
-          <p className="text-xs text-[#5d6178] truncate max-w-[160px]">{name}</p>
+          <h3 className="font-bold text-slate-900 text-lg">{symbol}</h3>
+          <p className="text-xs text-slate-400 truncate max-w-[140px]">{name}</p>
         </div>
         {sector && (
-          <span className="text-[10px] bg-[#222636] text-[#5d6178] px-2 py-0.5 rounded-full whitespace-nowrap uppercase tracking-wider">
+          <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wider font-semibold">
             {sector}
           </span>
         )}
       </div>
       {price != null && (
-        <div className="mt-3">
-          <span className="text-lg font-bold text-white">
+        <div className="mt-4 pt-3 border-t border-slate-100">
+          <span className="text-xl font-bold text-slate-900">
             ₹{price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
           </span>
           {changePercent != null && (
-            <span className={`ml-2 text-sm font-semibold ${isPositive ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+            <span className={`ml-2 text-sm font-bold px-2 py-1 rounded-lg ${isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
               {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
             </span>
           )}

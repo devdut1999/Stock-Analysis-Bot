@@ -30,7 +30,7 @@ function isMarketOpen(): { open: boolean; label: string } {
   const minutes = ist.getMinutes();
   const time = hours * 60 + minutes;
   const isWeekday = day >= 1 && day <= 5;
-  const inSession = time >= 555 && time <= 930; // 9:15 AM to 3:30 PM
+  const inSession = time >= 555 && time <= 930;
   if (!isWeekday) return { open: false, label: 'Closed · Weekend' };
   if (inSession) return { open: true, label: 'Market Open' };
   if (time < 555) return { open: false, label: 'Pre-market' };
@@ -60,7 +60,6 @@ export default function Dashboard() {
         setIndices(data.indices || []);
       }
     } catch {
-      // Will show placeholder
     } finally {
       setLoadingIndices(false);
     }
@@ -75,34 +74,43 @@ export default function Dashboard() {
         setLosers(data.losers || []);
       }
     } catch {
-      // Will show placeholder
     } finally {
       setLoadingMovers(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Hero Section */}
+      <section className="text-center py-6">
+        <h1 className="text-4xl font-bold text-slate-900 mb-3">
+          Indian Stock Market <span className="gradient-text">Intelligence</span>
+        </h1>
+        <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+          AI-powered analysis with 10 specialized agents for smarter trading decisions
+        </p>
+      </section>
+
       {/* Market Status + Indices */}
       <section>
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-base font-semibold text-white">Market Overview</h2>
-          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${
+        <div className="flex items-center gap-3 mb-5">
+          <h2 className="text-lg font-bold text-slate-900">Market Overview</h2>
+          <span className={`text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 ${
             marketStatus.open
-              ? 'bg-[#22c55e]/15 text-[#22c55e]'
-              : 'bg-[#5d6178]/15 text-[#8b8fa3]'
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-slate-100 text-slate-500'
           }`}>
-            <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${
-              marketStatus.open ? 'bg-[#22c55e] animate-pulse' : 'bg-[#5d6178]'
+            <span className={`w-2 h-2 rounded-full ${
+              marketStatus.open ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
             }`} />
             {marketStatus.label}
           </span>
         </div>
 
         {loadingIndices ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-4">
+              <div key={i} className="stat-card">
                 <div className="skeleton h-3 w-16 mb-3" />
                 <div className="skeleton h-7 w-28 mb-2" />
                 <div className="skeleton h-4 w-20" />
@@ -110,21 +118,23 @@ export default function Dashboard() {
             ))}
           </div>
         ) : indices.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {indices.map(idx => {
               const isUp = idx.change >= 0;
               return (
-                <div key={idx.symbol} className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-4 hover:border-[#3b82f6]/20 transition-colors">
-                  <p className="text-[11px] text-[#5d6178] font-medium uppercase tracking-wider mb-1">{idx.name}</p>
+                <div key={idx.symbol} className="stat-card card-hover">
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2">{idx.name}</p>
                   <div className="flex items-end justify-between">
-                    <p className="text-xl font-bold text-white">
+                    <p className="text-2xl font-bold text-slate-900">
                       {idx.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                     </p>
                     <div className="text-right">
-                      <span className={`text-sm font-semibold ${isUp ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                      <span className={`text-sm font-bold px-2 py-1 rounded-lg ${
+                        isUp ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
+                      }`}>
                         {isUp ? '+' : ''}{idx.changePercent?.toFixed(2)}%
                       </span>
-                      <p className="text-[11px] text-[#5d6178]">
+                      <p className="text-xs text-slate-400 mt-1">
                         {isUp ? '+' : ''}{idx.change?.toFixed(2)}
                       </p>
                     </div>
@@ -134,7 +144,7 @@ export default function Dashboard() {
             })}
           </div>
         ) : (
-          <div className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] p-6 text-center text-sm text-[#5d6178]">
+          <div className="stat-card text-center text-sm text-slate-400">
             Market data unavailable
           </div>
         )}
@@ -145,16 +155,16 @@ export default function Dashboard() {
 
       {/* Gainers & Losers */}
       <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MoverTable title="Top Gainers" icon="▲" iconColor="text-[#22c55e]" stocks={gainers} loading={loadingMovers} />
-          <MoverTable title="Top Losers" icon="▼" iconColor="text-[#ef4444]" stocks={losers} loading={loadingMovers} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <MoverTable title="Top Gainers" icon="↑" iconColor="text-emerald-500" stocks={gainers} loading={loadingMovers} />
+          <MoverTable title="Top Losers" icon="↓" iconColor="text-red-500" stocks={losers} loading={loadingMovers} />
         </div>
       </section>
 
       {/* Popular Stocks */}
       <section>
-        <h2 className="text-base font-semibold text-white mb-3">Popular Stocks</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <h2 className="text-lg font-bold text-slate-900 mb-4">Popular Stocks</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {INDIAN_STOCKS.slice(0, 15).map(stock => (
             <StockCard
               key={stock.symbol}
@@ -167,8 +177,10 @@ export default function Dashboard() {
       </section>
 
       {/* Footer */}
-      <footer className="pt-6 border-t border-[#2a2e3f] text-center text-xs text-[#5d6178]">
-        <p>Indian Stock Market Focus (NSE/BSE) · Not financial advice</p>
+      <footer className="pt-8 border-t border-slate-200 text-center">
+        <p className="text-sm text-slate-400">
+          Indian Stock Market Focus (NSE/BSE) · Not financial advice
+        </p>
       </footer>
     </div>
   );
@@ -187,18 +199,18 @@ function MoverTable({
 
   return (
     <div>
-      <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-        <span className={iconColor}>{icon}</span> {title}
+      <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span className={`${iconColor} text-xl`}>{icon}</span> {title}
       </h2>
-      <div className="bg-[#1a1d29] rounded-xl border border-[#2a2e3f] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2.5 text-[11px] text-[#5d6178] uppercase tracking-wider border-b border-[#2a2e3f]/60 font-medium">
+        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-100 font-semibold bg-slate-50/50">
           <span>Company</span>
           <span className="text-right w-20">LTP</span>
           <span className="text-right w-16">Chg%</span>
         </div>
         {loading ? (
-          <div className="p-4 space-y-3">
+          <div className="p-5 space-y-3">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="flex justify-between">
                 <div className="skeleton h-4 w-28" />
@@ -212,25 +224,27 @@ function MoverTable({
               <a
                 key={stock.symbol}
                 href={`/stock/${stock.symbol}`}
-                className={`grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-3 items-center hover:bg-[#222636] transition-colors ${
-                  i !== stocks.length - 1 ? 'border-b border-[#2a2e3f]/40' : ''
+                className={`grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3.5 items-center hover:bg-slate-50 transition-colors ${
+                  i !== stocks.length - 1 ? 'border-b border-slate-100' : ''
                 }`}
               >
                 <div className="min-w-0">
-                  <span className="font-semibold text-sm text-white">{stock.symbol}</span>
-                  <span className="text-xs text-[#5d6178] ml-2 hidden sm:inline truncate">{stock.name}</span>
+                  <span className="font-bold text-sm text-slate-900">{stock.symbol}</span>
+                  <span className="text-xs text-slate-400 ml-2 hidden sm:inline truncate">{stock.name}</span>
                 </div>
-                <span className="text-sm font-medium text-[#e1e4ea] text-right w-20">
+                <span className="text-sm font-semibold text-slate-700 text-right w-20">
                   ₹{stock.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                 </span>
-                <span className={`text-sm font-semibold text-right w-16 ${isGainer ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                <span className={`text-sm font-bold text-right w-16 px-2 py-0.5 rounded-md ${
+                  isGainer ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
+                }`}>
                   {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent?.toFixed(2)}%
                 </span>
               </a>
             ))}
           </div>
         ) : (
-          <div className="p-6 text-center text-sm text-[#5d6178]">
+          <div className="p-8 text-center text-sm text-slate-400">
             No data available
           </div>
         )}

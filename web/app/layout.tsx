@@ -21,9 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased bg-[#0f1117] text-[#e1e4ea] min-h-screen`}>
+      <body className={`${inter.className} antialiased min-h-screen`}>
         <Navbar />
-        {children}
+        <main className="relative">
+          {children}
+        </main>
       </body>
     </html>
   );
