@@ -66,78 +66,91 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
   const overviewData = data['overview'] || data['signal'];
   const priceData = overviewData?.price;
   const historicalData = overviewData?.historical || [];
+  const isPositive = (priceData?.change ?? 0) >= 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Breadcrumb */}
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-slate-400 mb-4"
-        >
+        <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
           <Link href="/" className="hover:text-indigo-600 transition-colors">Home</Link>
           <span>›</span>
           <Link href="/" className="hover:text-indigo-600 transition-colors">Stocks</Link>
           <span>›</span>
-          <span className="text-slate-700 font-medium">{symbol.toUpperCase()}</span>
-        </motion.div>
+          <span className="text-slate-700 font-medium">{stockInfo?.name || symbol.toUpperCase()}</span>
+        </div>
 
         {/* Main Layout: Content + Trading Panel */}
         <div className="flex gap-6">
           {/* Left: Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Stock Header */}
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-start justify-between mb-6"
-            >
-              <div className="flex items-center gap-4">
-                {/* Stock Logo Placeholder */}
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            {/* Stock Header - Groww Style */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-4 shadow-sm">
+              <div className="flex items-start gap-4">
+                {/* Stock Logo */}
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0">
                   {symbol.charAt(0)}
                 </div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-slate-900">{stockInfo?.name || symbol.toUpperCase()}</h1>
-                    <button
-                      onClick={() => watchlist.has(symbol) ? watchlist.remove(symbol) : watchlist.add(symbol)}
-                      className={`p-1.5 rounded-lg transition-all ${
-                        watchlist.has(symbol)
-                          ? 'bg-amber-100 text-amber-600'
-                          : 'bg-slate-100 text-slate-400 hover:bg-amber-50 hover:text-amber-500'
-                      }`}
-                    >
-                      <svg className="w-5 h-5" fill={watchlist.has(symbol) ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                
+                <div className="flex-1 min-w-0">
+                  {/* Symbol & Exchange Row */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-semibold text-slate-500">{symbol.toUpperCase()}</span>
+                    <span className="text-slate-300">•</span>
+                    <button className="flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-indigo-600 transition-colors">
+                      NSE
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-medium text-slate-500">{symbol.toUpperCase()}</span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-xs text-slate-400">NSE</span>
-                    {stockInfo?.sector && (
-                      <>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-medium">
-                          {stockInfo.sector}
-                        </span>
-                      </>
-                    )}
+                  
+                  {/* Company Name */}
+                  <h1 className="text-xl font-bold text-slate-900 mb-2">{stockInfo?.name || symbol.toUpperCase()}</h1>
+                  
+                  {/* Price Display - Prominent */}
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-bold text-slate-900">
+                      ₹{priceData?.currentPrice?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}
+                    </span>
+                    <span className={`text-lg font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {isPositive ? '+' : ''}{priceData?.change?.toFixed(2) || '0.00'} ({isPositive ? '+' : ''}{priceData?.changePercent?.toFixed(2) || '0.00'}%)
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">1D</span>
                   </div>
                 </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => watchlist.has(symbol) ? watchlist.remove(symbol) : watchlist.add(symbol)}
+                    className={`p-2.5 rounded-xl border transition-all ${
+                      watchlist.has(symbol)
+                        ? 'bg-amber-50 border-amber-200 text-amber-600'
+                        : 'bg-white border-slate-200 text-slate-400 hover:border-amber-200 hover:text-amber-500'
+                    }`}
+                    title={watchlist.has(symbol) ? 'Remove from watchlist' : 'Add to watchlist'}
+                  >
+                    <svg className="w-5 h-5" fill={watchlist.has(symbol) ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                  </button>
+                  <button className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:border-indigo-200 hover:text-indigo-500 transition-all" title="Share">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </button>
+                  <button className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:border-indigo-200 hover:text-indigo-500 transition-all" title="More options">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Price Chart */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="mb-6"
-            >
+            <div className="mb-4">
               <StockChart
                 symbol={symbol}
                 currentPrice={priceData?.currentPrice}
@@ -145,91 +158,95 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
                 changePercent={priceData?.changePercent}
                 historicalData={historicalData}
               />
-            </motion.div>
+            </div>
 
-            {/* Tabs */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-6"
-            >
-              <AnimatedTabs
-                tabs={TABS}
-                activeTab={activeTab}
-                onChange={(id) => handleTabChange(id as TabId)}
-              />
-            </motion.div>
+            {/* Tabs - Underline Style like Groww */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="border-b border-slate-100">
+                <nav className="flex">
+                  {TABS.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabChange(tab.id as TabId)}
+                      className={`relative px-5 py-3.5 text-sm font-medium transition-colors ${
+                        activeTab === tab.id
+                          ? 'text-indigo-600'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      {tab.label}
+                      {activeTab === tab.id && (
+                        <motion.div
+                          layoutId="activeTab"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"
+                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                    </button>
+                  ))}
+                </nav>
+              </div>
 
-            {/* Tab Content */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="min-h-[400px]"
-            >
-              {loading[activeTab] && (
-                <div className="flex items-center justify-center py-20">
-                  <div className="text-center">
-                    <div className="relative w-12 h-12 mx-auto mb-4">
-                      <div className="absolute inset-0 rounded-full border-2 border-indigo-100"></div>
-                      <div className="absolute inset-0 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin"></div>
+              {/* Tab Content */}
+              <div className="p-5 min-h-[400px]">
+                {loading[activeTab] && (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="text-center">
+                      <div className="relative w-10 h-10 mx-auto mb-3">
+                        <div className="absolute inset-0 rounded-full border-2 border-slate-100"></div>
+                        <div className="absolute inset-0 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin"></div>
+                      </div>
+                      <p className="text-slate-500 text-sm">
+                        {activeTab === 'signal' ? 'Running AI analysis...' : 'Loading...'}
+                      </p>
+                      {activeTab === 'signal' && (
+                        <p className="text-slate-400 text-xs mt-1">10 agents • 30-60 seconds</p>
+                      )}
                     </div>
-                    <p className="text-slate-500 text-sm font-medium">
-                      {activeTab === 'signal' ? 'Running AI analysis...' : 'Loading...'}
-                    </p>
-                    {activeTab === 'signal' && (
-                      <p className="text-slate-400 text-xs mt-1">10 agents analyzing (30-60s)</p>
-                    )}
                   </div>
-                </div>
-              )}
-
-              {errors[activeTab] && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-slate-900 font-bold mb-2">Unable to load data</h3>
-                  <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">{errors[activeTab]}</p>
-                  <button
-                    onClick={() => {
-                      setData(prev => { const n = { ...prev }; delete n[activeTab]; return n; });
-                      fetchTabData(activeTab);
-                    }}
-                    className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              )}
-
-              <AnimatePresence mode="wait">
-                {!loading[activeTab] && !errors[activeTab] && (
-                  <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {renderTab(activeTab, data, symbol)}
-                  </motion.div>
                 )}
-              </AnimatePresence>
-            </motion.div>
+
+                {errors[activeTab] && (
+                  <div className="text-center py-16">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-slate-900 font-semibold mb-2">Unable to load data</h3>
+                    <p className="text-slate-400 text-sm mb-4 max-w-sm mx-auto">{errors[activeTab]}</p>
+                    <button
+                      onClick={() => {
+                        setData(prev => { const n = { ...prev }; delete n[activeTab]; return n; });
+                        fetchTabData(activeTab);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
+                <AnimatePresence mode="wait">
+                  {!loading[activeTab] && !errors[activeTab] && (
+                    <motion.div
+                      key={activeTab}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      {renderTab(activeTab, data, symbol)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
 
           {/* Right: Trading Panel (Desktop) */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="hidden lg:block w-80 shrink-0"
-          >
-            <div className="sticky top-6">
+          <div className="hidden lg:block w-[340px] shrink-0">
+            <div className="sticky top-4">
               <TradingPanel
                 symbol={symbol.toUpperCase()}
                 currentPrice={priceData?.currentPrice || 0}
@@ -237,7 +254,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
                 changePercent={priceData?.changePercent || 0}
               />
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
@@ -288,139 +305,106 @@ function OverviewContent({ data }: { data: any }) {
 
   return (
     <div className="space-y-6">
-      {/* Key Stats Row */}
+      {/* Performance Stats - Horizontal Row */}
       {p && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Key Statistics</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Day Range</p>
-              <p className="text-sm font-semibold text-slate-900">₹{p.low?.toFixed(2)} - ₹{p.high?.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">52W Range</p>
-              <p className="text-sm font-semibold text-slate-900">₹{p.fiftyTwoWeekLow?.toFixed(0)} - ₹{p.fiftyTwoWeekHigh?.toFixed(0)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Volume</p>
-              <p className="text-sm font-semibold text-slate-900">{p.volume?.toLocaleString('en-IN') || '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Market Cap</p>
-              <p className="text-sm font-semibold text-slate-900">{p.marketCap ? `₹${(p.marketCap / 1e7).toFixed(0)} Cr` : '—'}</p>
-            </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="flex flex-col">
+            <span className="text-xs text-slate-400 mb-1">Today's Low</span>
+            <span className="text-sm font-semibold text-slate-900">₹{p.low?.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs text-slate-400 mb-1">Today's High</span>
+            <span className="text-sm font-semibold text-slate-900">₹{p.high?.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs text-slate-400 mb-1">52W Low</span>
+            <span className="text-sm font-semibold text-slate-900">₹{p.fiftyTwoWeekLow?.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs text-slate-400 mb-1">52W High</span>
+            <span className="text-sm font-semibold text-slate-900">₹{p.fiftyTwoWeekHigh?.toFixed(2)}</span>
           </div>
         </div>
       )}
 
-      {/* Two Column Layout */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Technical Indicators */}
-        {t && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Technical Indicators</h3>
-            <div className="space-y-3">
-              {t.rsi != null && (
-                <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                  <span className="text-sm text-slate-500">RSI (14)</span>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${t.rsi > 70 ? 'text-red-600' : t.rsi < 30 ? 'text-emerald-600' : 'text-slate-900'}`}>
-                      {t.rsi.toFixed(1)}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      t.rsi > 70 ? 'bg-red-50 text-red-600' : 
-                      t.rsi < 30 ? 'bg-emerald-50 text-emerald-600' : 
-                      'bg-slate-50 text-slate-500'
-                    }`}>
-                      {t.rsi > 70 ? 'Overbought' : t.rsi < 30 ? 'Oversold' : 'Neutral'}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {t.movingAverages?.sma20 != null && (
-                <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                  <span className="text-sm text-slate-500">SMA 20</span>
-                  <span className="text-sm font-semibold text-slate-900">₹{t.movingAverages.sma20.toFixed(2)}</span>
-                </div>
-              )}
-              {t.movingAverages?.sma50 != null && (
-                <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                  <span className="text-sm text-slate-500">SMA 50</span>
-                  <span className="text-sm font-semibold text-slate-900">₹{t.movingAverages.sma50.toFixed(2)}</span>
-                </div>
-              )}
-              {t.movingAverages?.sma200 != null && (
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-slate-500">SMA 200</span>
-                  <span className="text-sm font-semibold text-slate-900">₹{t.movingAverages.sma200.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Fundamentals */}
-        {f && (f.peRatio || f.roe || f.roce) && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Fundamentals</h3>
-            <div className="space-y-3">
-              {f.peRatio != null && (
-                <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                  <span className="text-sm text-slate-500">P/E Ratio</span>
-                  <span className="text-sm font-semibold text-slate-900">{f.peRatio.toFixed(2)}</span>
-                </div>
-              )}
-              {f.pbRatio != null && (
-                <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                  <span className="text-sm text-slate-500">P/B Ratio</span>
-                  <span className="text-sm font-semibold text-slate-900">{f.pbRatio.toFixed(2)}</span>
-                </div>
-              )}
-              {f.roe != null && (
-                <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                  <span className="text-sm text-slate-500">ROE</span>
-                  <span className="text-sm font-semibold text-slate-900">{f.roe.toFixed(1)}%</span>
-                </div>
-              )}
-              {f.roce != null && (
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-slate-500">ROCE</span>
-                  <span className="text-sm font-semibold text-slate-900">{f.roce.toFixed(1)}%</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+      {/* Key Metrics Table */}
+      <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-slate-100">
+            {p?.open && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">Open</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">₹{p.open?.toFixed(2)}</td>
+              </tr>
+            )}
+            {p?.previousClose && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">Prev. Close</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">₹{p.previousClose?.toFixed(2)}</td>
+              </tr>
+            )}
+            {p?.volume && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">Volume</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">{p.volume?.toLocaleString('en-IN')}</td>
+              </tr>
+            )}
+            {p?.marketCap && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">Market Cap</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">₹{(p.marketCap / 1e7).toFixed(0)} Cr</td>
+              </tr>
+            )}
+            {f?.peRatio && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">P/E Ratio</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">{f.peRatio?.toFixed(2)}</td>
+              </tr>
+            )}
+            {f?.pbRatio && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">P/B Ratio</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">{f.pbRatio?.toFixed(2)}</td>
+              </tr>
+            )}
+            {f?.dividendYield != null && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">Dividend Yield</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">{f.dividendYield?.toFixed(2)}%</td>
+              </tr>
+            )}
+            {f?.eps && (
+              <tr className="hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-500">EPS (TTM)</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-900">₹{f.eps?.toFixed(2)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Shareholding Pattern */}
       {ind?.promoterHolding && ind.promoterHolding.promoterPercentage > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Shareholding Pattern</h3>
-          <div className="grid grid-cols-4 gap-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-700 mb-3">Shareholding Pattern</h3>
+          <div className="space-y-3">
             {[
-              { label: 'Promoter', value: ind.promoterHolding.promoterPercentage, color: 'bg-indigo-500' },
+              { label: 'Promoters', value: ind.promoterHolding.promoterPercentage, color: 'bg-indigo-500' },
               { label: 'FII', value: ind.promoterHolding.fiiPercentage, color: 'bg-emerald-500' },
               { label: 'DII', value: ind.promoterHolding.diiPercentage, color: 'bg-amber-500' },
               { label: 'Public', value: ind.promoterHolding.publicPercentage, color: 'bg-slate-400' },
             ].map(item => (
-              <div key={item.label} className="text-center">
-                <div className="relative w-16 h-16 mx-auto mb-2">
-                  <svg className="w-16 h-16 transform -rotate-90">
-                    <circle cx="32" cy="32" r="28" fill="none" stroke="#f1f5f9" strokeWidth="6" />
-                    <circle 
-                      cx="32" cy="32" r="28" fill="none" 
-                      className={item.color.replace('bg-', 'stroke-')}
-                      strokeWidth="6"
-                      strokeDasharray={`${(item.value || 0) * 1.76} 176`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-700">
-                    {item.value?.toFixed(0)}%
-                  </span>
+              <div key={item.label}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-slate-600">{item.label}</span>
+                  <span className="font-semibold text-slate-900">{item.value?.toFixed(2)}%</span>
                 </div>
-                <p className="text-xs text-slate-500 font-medium">{item.label}</p>
+                <div className="w-full bg-slate-100 rounded-full h-2">
+                  <div 
+                    className={`${item.color} h-2 rounded-full transition-all`} 
+                    style={{ width: `${Math.min(item.value || 0, 100)}%` }} 
+                  />
+                </div>
               </div>
             ))}
           </div>
