@@ -55,6 +55,20 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     requiresAuth: true,
   },
   {
+    id: 'upstox',
+    name: 'Upstox',
+    description: 'Connect your Upstox account for fast real-time NSE/BSE data, F&O analytics, and portfolio sync.',
+    icon: '📈',
+    category: 'broker',
+    configSchema: [],
+    requiresAuth: true,
+    authType: 'oauth2',
+    oauthConfig: {
+      authUrl: 'https://api.upstox.com/v2/login/authorization/dialog',
+      tokenUrl: 'https://api.upstox.com/v2/login/authorization/token',
+    },
+  },
+  {
     id: 'groww',
     name: 'Groww',
     description: 'Import your Groww portfolio and track holdings. Coming soon.',

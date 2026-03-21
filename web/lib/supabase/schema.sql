@@ -94,9 +94,22 @@ CREATE TABLE public.analysis_history (
 ALTER TABLE public.analysis_history ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users manage own analysis" ON public.analysis_history FOR ALL USING (auth.uid() = user_id);
 
+-- Analysis Cache (server-side only, no RLS — accessed via service role)
+CREATE TABLE public.analysis_cache (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  symbol TEXT NOT NULL,
+  data_type TEXT NOT NULL,
+  data_source TEXT DEFAULT 'yahoo',
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  fetched_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(symbol, data_type)
+);
+
 -- Indexes
 CREATE INDEX idx_watchlists_user ON public.watchlists(user_id);
 CREATE INDEX idx_portfolios_user ON public.portfolios(user_id);
 CREATE INDEX idx_alerts_user_symbol ON public.alerts(user_id, symbol);
 CREATE INDEX idx_analysis_history_user ON public.analysis_history(user_id, created_at DESC);
 CREATE INDEX idx_integrations_user ON public.integrations(user_id);
+CREATE INDEX idx_analysis_cache_lookup ON public.analysis_cache(symbol, data_type, expires_at);

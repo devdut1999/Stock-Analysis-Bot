@@ -160,5 +160,6 @@ export interface AggregatedStockData {
     fundamentalsAvailable: boolean;
     technicalsAvailable: boolean;
     sentimentAvailable: boolean;
+    dataSource?: 'upstox' | 'yahoo' | 'indian-api';
   };
 }

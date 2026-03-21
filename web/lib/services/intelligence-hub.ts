@@ -36,12 +36,16 @@ import {
   calculateAllIndicators,
   interpretTechnicalIndicators
 } from '../tools/technical/indicators';
+import { getUpstoxQuote, getUpstoxHistoricalData } from '../tools/market-data/upstox-api';
+import { upstoxAdapter } from '../integrations/adapters/upstox-adapter';
+import { getCachedData, setCachedData } from './data-cache';
 
 export interface DataCollectionOptions {
   includeFundamentals?: boolean;
   includeTechnicals?: boolean;
   includeIndiaSpecific?: boolean;
   historicalDays?: number;
+  userId?: string; // If provided, check for Upstox connection
 }
 
 /**
@@ -55,7 +59,8 @@ export async function collectStockData(
     includeFundamentals = true,
     includeTechnicals = true,
     includeIndiaSpecific = true,
-    historicalDays = 90
+    historicalDays = 90,
+    userId,
   } = options;
 
   // Detect market
@@ -73,38 +78,91 @@ export async function collectStockData(
   }
 
   try {
-    console.log('[Intelligence Hub] Using Yahoo Finance as primary data source');
+    // Check if user has Upstox connected
+    let upstoxToken: string | null = null;
+    let dataSource: 'upstox' | 'yahoo' | 'indian-api' = 'yahoo';
 
-    // Collect data in parallel for maximum speed
-    // Priority: Yahoo Finance -> Indian Stock API (fallback)
+    if (userId) {
+      try {
+        upstoxToken = await upstoxAdapter.getAccessToken(userId);
+        if (upstoxToken) {
+          console.log('[Intelligence Hub] Using Upstox as primary data source');
+          dataSource = 'upstox';
+        }
+      } catch {
+        // Fallback to Yahoo
+      }
+    }
+
+    // Check cache first
+    const cachedPrice = await getCachedData<any>(normalizedSymbol, 'quote');
+    const cachedHistorical = includeTechnicals ? await getCachedData<any[]>(normalizedSymbol, 'historical') : null;
+
+    // Collect data in parallel
+    // Priority: Cache -> Upstox (if connected) -> Yahoo Finance -> Indian Stock API
+    const exchangeTyped = (exchange as 'NSE' | 'BSE') || 'NSE';
+
     const [
       priceData,
       historicalData,
       fundamentalDataFromAPI
     ] = await Promise.all([
-      // Price data: Try Yahoo Finance first, fallback to Indian Stock API
-      getYahooQuote(normalizedSymbol, exchange as 'NSE' | 'BSE' || 'NSE').catch(err => {
-        console.warn('[Intelligence Hub] Yahoo Finance price failed, trying Indian Stock API');
-        return getIndianStockQuote(normalizedSymbol, exchange as 'NSE' | 'BSE' || 'NSE');
-      }),
+      // Price data
+      cachedPrice
+        ? cachedPrice
+        : upstoxToken
+          ? getUpstoxQuote(normalizedSymbol, upstoxToken, exchangeTyped).then(d => {
+              if (d) setCachedData(normalizedSymbol, 'quote', d, 'upstox');
+              return d;
+            }).catch(() => null)
+          : null,
 
-      // Historical data: Try Yahoo Finance first, fallback to Indian Stock API
+      // Historical data
       includeTechnicals
-        ? getYahooHistoricalData(normalizedSymbol, exchange as 'NSE' | 'BSE' || 'NSE', historicalDays).catch(err => {
-          console.warn('[Intelligence Hub] Yahoo Finance historical failed, trying Indian Stock API');
-          return getIndianHistoricalData(normalizedSymbol, exchange as 'NSE' | 'BSE' || 'NSE', historicalDays);
-        })
+        ? (cachedHistorical || (
+            upstoxToken
+              ? getUpstoxHistoricalData(normalizedSymbol, upstoxToken, historicalDays, exchangeTyped)
+                  .then(d => { if (d.length) setCachedData(normalizedSymbol, 'historical', d, 'upstox'); return d; })
+                  .catch(() => [])
+              : Promise.resolve([])
+          ))
         : Promise.resolve([]),
 
-      // Fundamental data: Try Yahoo Finance first, fallback to Indian Stock API
-      // (will be merged with screener.in data later)
+      // Fundamentals (Upstox doesn't provide fundamentals, always use Yahoo)
       includeFundamentals
-        ? getYahooFundamentals(normalizedSymbol, exchange as 'NSE' | 'BSE' || 'NSE').catch(err => {
-          console.warn('[Intelligence Hub] Yahoo Finance fundamentals failed, trying Indian Stock API');
-          return getIndianFundamentals(normalizedSymbol, exchange as 'NSE' | 'BSE' || 'NSE');
-        })
+        ? getYahooFundamentals(normalizedSymbol, exchangeTyped).catch(() => {
+            return getIndianFundamentals(normalizedSymbol, exchangeTyped);
+          })
         : Promise.resolve({})
     ]);
+
+    // If Upstox didn't return price data, fall back to Yahoo -> Indian API
+    let finalPriceData = priceData;
+    if (!finalPriceData) {
+      dataSource = 'yahoo';
+      console.log('[Intelligence Hub] Falling back to Yahoo Finance');
+      finalPriceData = await getYahooQuote(normalizedSymbol, exchangeTyped).catch(() => {
+        dataSource = 'indian-api';
+        console.warn('[Intelligence Hub] Yahoo failed, trying Indian Stock API');
+        return getIndianStockQuote(normalizedSymbol, exchangeTyped);
+      });
+      if (finalPriceData) setCachedData(normalizedSymbol, 'quote', finalPriceData, dataSource);
+    }
+
+    // If historical data empty, fall back to Yahoo -> Indian API
+    let finalHistoricalData = historicalData;
+    if (includeTechnicals && (!finalHistoricalData || (Array.isArray(finalHistoricalData) && finalHistoricalData.length === 0))) {
+      finalHistoricalData = await getYahooHistoricalData(normalizedSymbol, exchangeTyped, historicalDays).catch(() => {
+        return getIndianHistoricalData(normalizedSymbol, exchangeTyped, historicalDays);
+      });
+      if (finalHistoricalData && Array.isArray(finalHistoricalData) && finalHistoricalData.length > 0) {
+        setCachedData(normalizedSymbol, 'historical', finalHistoricalData, 'yahoo');
+      }
+    }
+
+    // Reassign for downstream compatibility
+    const priceDataFinal = finalPriceData;
+    const historicalDataFinal = finalHistoricalData;
 
     // Start with fundamentals from API
     let fundamentals = fundamentalDataFromAPI;
@@ -119,9 +177,9 @@ export async function collectStockData(
       resistanceLevels: []
     };
 
-    if (includeTechnicals && historicalData.length > 0) {
-      console.log(`[Intelligence Hub] Calculating technical indicators from ${historicalData.length} days of data`);
-      technicals = calculateAllIndicators(historicalData);
+    if (includeTechnicals && historicalDataFinal && Array.isArray(historicalDataFinal) && historicalDataFinal.length > 0) {
+      console.log(`[Intelligence Hub] Calculating technical indicators from ${historicalDataFinal.length} days of data`);
+      technicals = calculateAllIndicators(historicalDataFinal);
     }
 
     // Collect India-specific data in parallel
@@ -219,7 +277,7 @@ export async function collectStockData(
       exchange: exchange || 'NSE',
       timestamp: new Date(),
 
-      price: priceData,
+      price: priceDataFinal,
       fundamentals,
       technicals,
       sentiment,
@@ -227,10 +285,11 @@ export async function collectStockData(
       indiaSpecific,
 
       dataQuality: {
-        priceDataAvailable: true,
+        priceDataAvailable: !!priceDataFinal,
         fundamentalsAvailable: Object.keys(fundamentals).length > 0,
-        technicalsAvailable: includeTechnicals && historicalData.length > 0,
-        sentimentAvailable: false // Will be true once news API is integrated
+        technicalsAvailable: includeTechnicals && Array.isArray(historicalDataFinal) && historicalDataFinal.length > 0,
+        sentimentAvailable: false, // Will be true once news API is integrated
+        dataSource,
       }
     };
 

@@ -232,6 +232,13 @@ rateLimiter.register('breeze', {
   minDelay: 1000
 });
 
+// Upstox API (25 requests per second)
+rateLimiter.register('upstox', {
+  maxRequests: 25,
+  windowMs: 1000, // 1 second
+  minDelay: 50 // 50ms between requests
+});
+
 // NewsAPI (Free tier: 100 requests/day)
 rateLimiter.register('newsAPI', {
   maxRequests: 100,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { collectStockData } from '../../../lib/services/intelligence-hub';
 import { orchestrateAnalysis } from '../../../lib/agents/orchestrator';
 import { generateTradingSignal, formatTradingSignal } from '../../../lib/trading/signal-generator';
+import { createClient } from '../../../lib/supabase/server';
 
 export const runtime = 'nodejs'; // Use Node.js runtime for Anthropic SDK
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Get user session for Upstox integration (optional)
+  let userId: string | undefined;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id;
+  } catch {
+    // Anonymous user — will use Yahoo Finance
+  }
+
   try {
     // Quick analysis - minimal data for fast loading
     if (type === 'quick') {
@@ -27,7 +38,8 @@ export async function GET(request: NextRequest) {
         includeTechnicals: true,
         includeFundamentals: false, // Skip for quick - speeds up significantly
         includeIndiaSpecific: true,
-        historicalDays: 30 // Reduced from 90 for faster load
+        historicalDays: 30, // Reduced from 90 for faster load
+        userId,
       });
 
       return NextResponse.json({
@@ -51,7 +63,8 @@ export async function GET(request: NextRequest) {
       includeTechnicals: true,
       includeFundamentals: true,
       includeIndiaSpecific: true,
-      historicalDays: 90
+      historicalDays: 90,
+      userId,
     });
 
     // Phase 2: Deep analysis with 10 AI agents (requires API key)

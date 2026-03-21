@@ -15,6 +15,11 @@ export interface IntegrationDefinition {
   category: 'news' | 'broker' | 'social' | 'messaging';
   configSchema: ConfigField[];
   requiresAuth: boolean;
+  authType?: 'api_key' | 'oauth2' | 'webhook';
+  oauthConfig?: {
+    authUrl: string;
+    tokenUrl: string;
+  };
 }
 
 export interface IntegrationFetchParams<TConfig = Record<string, unknown>> {
