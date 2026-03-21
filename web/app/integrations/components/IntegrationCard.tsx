@@ -58,7 +58,7 @@ export default function IntegrationCard({
             onClick={needsConfig ? onConfigure : onQuickEnable}
             className="flex-1 text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2.5 rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all"
           >
-            {needsConfig ? 'Configure & Connect' : 'Enable'}
+            {needsConfig ? 'Configure & Connect' : integration.authType === 'oauth2' ? `Connect ${integration.name}` : 'Enable'}
           </button>
         )}
       </div>

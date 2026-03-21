@@ -36,6 +36,24 @@ export default function IntegrationsPage() {
   };
 
   const handleEnable = async (provider: string, config: Record<string, unknown> = {}) => {
+    // Check if this is an OAuth integration (like Upstox)
+    const integration = INTEGRATIONS.find(i => i.id === provider);
+    if (integration?.authType === 'oauth2') {
+      // Redirect to OAuth flow
+      try {
+        const res = await fetch(`/api/integrations/${provider}/connect`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.redirectUrl) {
+            window.location.href = data.redirectUrl;
+            return;
+          }
+        }
+      } catch {
+        // Fall through to regular enable
+      }
+    }
+
     const res = await fetch('/api/integrations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
