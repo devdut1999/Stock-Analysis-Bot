@@ -226,6 +226,16 @@ export async function collectStockData(
 
       indiaSpecific,
 
+      // Pass historical data for pattern detection (VCP, SEPA)
+      historicalPrices: historicalData.map(p => ({
+        date: p.date.toISOString(),
+        open: p.open,
+        high: p.high,
+        low: p.low,
+        close: p.close,
+        volume: p.volume,
+      })),
+
       dataQuality: {
         priceDataAvailable: true,
         fundamentalsAvailable: Object.keys(fundamentals).length > 0,

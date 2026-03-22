@@ -1,4 +1,4 @@
--- StockBot Database Schema
+-- Nivesh AI Database Schema
 -- Run this in Supabase SQL Editor after creating the project
 
 -- Profiles (auto-created on signup)
@@ -11,6 +11,7 @@ CREATE TABLE public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -106,6 +107,33 @@ CREATE TABLE public.analysis_cache (
   UNIQUE(symbol, data_type)
 );
 
+-- Function to clean up expired cache entries
+CREATE OR REPLACE FUNCTION public.cleanup_expired_cache()
+RETURNS INTEGER AS $$
+DECLARE
+  deleted_count INTEGER;
+BEGIN
+  DELETE FROM public.analysis_cache
+  WHERE expires_at < NOW();
+  
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
+  RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Auto-update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER integrations_updated_at
+  BEFORE UPDATE ON public.integrations
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
 -- Indexes
 CREATE INDEX idx_watchlists_user ON public.watchlists(user_id);
 CREATE INDEX idx_portfolios_user ON public.portfolios(user_id);
@@ -113,3 +141,8 @@ CREATE INDEX idx_alerts_user_symbol ON public.alerts(user_id, symbol);
 CREATE INDEX idx_analysis_history_user ON public.analysis_history(user_id, created_at DESC);
 CREATE INDEX idx_integrations_user ON public.integrations(user_id);
 CREATE INDEX idx_analysis_cache_lookup ON public.analysis_cache(symbol, data_type, expires_at);
+CREATE INDEX idx_analysis_cache_expiry ON public.analysis_cache(expires_at);
+
+-- Schedule cache cleanup (run via Supabase cron or external scheduler)
+-- Example: SELECT cron.schedule('cleanup-cache', '0 * * * *', 'SELECT public.cleanup_expired_cache()');
+-- Note: Requires pg_cron extension to be enabled in Supabase dashboard

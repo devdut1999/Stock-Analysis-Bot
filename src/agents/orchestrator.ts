@@ -6,6 +6,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getAgentDefinitions, getAgentsByRole, type AgentDefinition } from '../config/agents.js';
 import type { AggregatedStockData } from '../types/stock-data.js';
+import { evaluateSEPA, type SEPAResult } from '../tools/technical/minervini.js';
+import type { PricePoint } from '../tools/technical/indicators.js';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
@@ -267,10 +269,33 @@ export async function orchestrateAnalysis(
     executeAgent(agent, marketContext, marketData)
   );
 
+  // Compute Minervini SEPA data if historical prices available
+  let sepaContext = '';
+  if (marketData.historicalPrices && marketData.historicalPrices.length >= 200) {
+    try {
+      const pricePoints: PricePoint[] = marketData.historicalPrices.map((p: any) => ({
+        date: new Date(p.date),
+        open: p.open,
+        high: p.high,
+        low: p.low,
+        close: p.close,
+        volume: p.volume,
+      }));
+      const sepa = evaluateSEPA(pricePoints);
+      sepaContext = formatSEPAContext(sepa);
+      console.log(`[Orchestrator] SEPA computed: Score ${sepa.score.toFixed(0)}, Template ${sepa.trendTemplate.score}/8, VCP ${sepa.vcp.detected ? 'DETECTED' : 'none'}`);
+    } catch (err) {
+      console.warn('[Orchestrator] SEPA computation failed:', err);
+    }
+  }
+
   console.log(`[Orchestrator] Phase 3: Trading & Risk Panel (${tradingAgents.length} agents)`);
-  const tradingPromises = tradingAgents.map(agent =>
-    executeAgent(agent, marketContext, marketData)
-  );
+  const tradingContext = sepaContext ? `${marketContext}\n\n${sepaContext}` : marketContext;
+  const tradingPromises = tradingAgents.map(agent => {
+    // Give Minervini agent the SEPA-enriched context, others get standard context
+    const ctx = agent.id === 'trading-minervini' ? tradingContext : marketContext;
+    return executeAgent(agent, ctx, marketData);
+  });
 
   // Wait for all panel analyses to complete
   const [technicalPanel, fundamentalPanel, tradingPanel] = await Promise.all([
@@ -390,6 +415,58 @@ export function formatAnalysisReport(analysis: MultiAgentAnalysis): string {
   lines.push(`Trading Panel: ${analysis.tradingPanel.reduce((sum, a) => sum + a.duration, 0)}ms`);
   lines.push(`Synthesis: ${analysis.synthesis.duration}ms`);
   lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Format SEPA results as context for the Minervini agent
+ */
+function formatSEPAContext(sepa: SEPAResult): string {
+  const lines: string[] = [];
+
+  lines.push('## PRE-COMPUTED SEPA ANALYSIS (Minervini Methodology)');
+  lines.push('');
+
+  // Trend Template
+  lines.push('### Trend Template Results');
+  lines.push(`Overall: ${sepa.trendTemplate.passes ? 'PASSES ALL 8' : `FAILS (${sepa.trendTemplate.score}/8)`}`);
+  lines.push(`Stage: ${sepa.trendTemplate.stage}`);
+  for (const c of sepa.trendTemplate.criteria) {
+    lines.push(`  ${c.passes ? '✓' : '✗'} Criterion ${c.id}: ${c.label}`);
+    lines.push(`    ${c.value} (Threshold: ${c.threshold})`);
+  }
+  lines.push('');
+
+  // VCP
+  lines.push('### VCP Pattern Detection');
+  lines.push(`Pattern: ${sepa.vcp.detected ? 'DETECTED' : 'Not detected'} (Confidence: ${sepa.vcp.confidence}%)`);
+  lines.push(`Volume Declining: ${sepa.vcp.volumeDeclining ? 'Yes' : 'No'}`);
+  if (sepa.vcp.contractions.length > 0) {
+    lines.push(`Contractions (${sepa.vcp.contractions.length}):`);
+    for (const c of sepa.vcp.contractions) {
+      lines.push(`  #${c.number}: Depth ${c.depthPercent.toFixed(1)}%, Avg Vol ${c.avgVolume.toLocaleString()}, ${c.days} days`);
+    }
+  }
+  if (sepa.vcp.pivotPrice) {
+    lines.push(`Pivot Price: ₹${sepa.vcp.pivotPrice.toFixed(2)}`);
+  }
+  lines.push('');
+
+  // Entry calculations
+  lines.push('### SEPA Entry Calculations');
+  lines.push(`Valid Entry: ${sepa.valid ? 'YES' : 'NO'}`);
+  lines.push(`SEPA Score: ${sepa.score.toFixed(0)}/100`);
+  if (sepa.entryPrice) lines.push(`Entry Price: ₹${sepa.entryPrice.toFixed(2)}`);
+  if (sepa.stopLoss) lines.push(`Stop Loss: ₹${sepa.stopLoss.toFixed(2)}`);
+  if (sepa.riskPercent) lines.push(`Risk: ${sepa.riskPercent.toFixed(1)}%`);
+  if (sepa.targets) {
+    lines.push(`Target 1 (1R): ₹${sepa.targets.r1.toFixed(2)}`);
+    lines.push(`Target 2 (2R): ₹${sepa.targets.r2.toFixed(2)}`);
+    lines.push(`Target 3 (3R): ₹${sepa.targets.r3.toFixed(2)}`);
+  }
+  lines.push('');
+  lines.push(`Summary: ${sepa.summary}`);
 
   return lines.join('\n');
 }

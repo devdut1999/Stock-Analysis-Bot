@@ -154,6 +154,16 @@ export interface AggregatedStockData {
   // Market-specific
   indiaSpecific?: IndiaSpecificData;
 
+  // Historical price data for pattern detection (VCP, SEPA)
+  historicalPrices?: Array<{
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }>;
+
   // Metadata
   dataQuality: {
     priceDataAvailable: boolean;
