@@ -10,12 +10,13 @@ import TradingPanel from '../../components/TradingPanel';
 import AnimatedTabs, { TabContent } from '../../components/AnimatedTabs';
 import StockLogo from '../../components/StockLogo';
 
-type TabId = 'overview' | 'technical' | 'fundamental' | 'fno' | 'news' | 'signal';
+type TabId = 'overview' | 'technical' | 'fundamental' | 'minervini' | 'fno' | 'news' | 'signal';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'technical', label: 'Technical' },
   { id: 'fundamental', label: 'Fundamental' },
+  { id: 'minervini', label: 'SEPA' },
   { id: 'fno', label: 'F&O' },
   { id: 'news', label: 'News' },
   { id: 'signal', label: 'AI Signal' },
@@ -37,6 +38,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
 
   const fetchTabData = async (tab: TabId) => {
     if (data[tab]) return; // Already loaded
+    if (tab === 'minervini') return; // MinerviniContent handles its own fetch
 
     setLoading(prev => ({ ...prev, [tab]: true }));
     setErrors(prev => ({ ...prev, [tab]: '' }));
@@ -271,6 +273,8 @@ function renderTab(tab: TabId, data: Record<string, any>, symbol: string) {
       return <TechnicalContent data={tabData} symbol={symbol} />;
     case 'fundamental':
       return <FundamentalContent data={tabData} />;
+    case 'minervini':
+      return <MinerviniContent symbol={symbol} />;
     case 'fno':
       return <FnOContent data={tabData} />;
     case 'news':
@@ -617,6 +621,198 @@ function FnOContent({ data }: { data: any }) {
           Connect Groww/Zerodha MCP for live Greeks and options chain data.
         </p>
       </div>
+    </div>
+  );
+}
+
+function MinerviniContent({ symbol }: { symbol: string }) {
+  const [sepaData, setSepaData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch(`/api/screener/minervini?symbol=${encodeURIComponent(symbol)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) throw new Error(data.error);
+        setSepaData(data);
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [symbol]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#5367ff] mb-3" />
+          <p className="text-[#999] text-sm">Running Minervini SEPA analysis...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+        <p className="text-red-600 font-medium mb-1">Unable to run SEPA analysis</p>
+        <p className="text-red-400 text-sm">{error}</p>
+      </div>
+    );
+  }
+
+  if (!sepaData?.sepa) return null;
+
+  const { sepa } = sepaData;
+  const tt = sepa.trendTemplate;
+  const vcp = sepa.vcp;
+  const entry = sepa.entry;
+
+  const stageColors: Record<string, string> = {
+    'stage1-accumulation': 'bg-yellow-100 text-yellow-700',
+    'stage2-uptrend': 'bg-emerald-100 text-emerald-700',
+    'stage3-distribution': 'bg-orange-100 text-orange-700',
+    'stage4-decline': 'bg-red-100 text-red-700',
+  };
+
+  const stageLabels: Record<string, string> = {
+    'stage1-accumulation': 'Stage 1 — Accumulation',
+    'stage2-uptrend': 'Stage 2 — Uptrend ✓',
+    'stage3-distribution': 'Stage 3 — Distribution',
+    'stage4-decline': 'Stage 4 — Decline',
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Banner */}
+      <div className={`rounded-2xl p-5 border ${sepa.valid ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold text-slate-900">
+            SEPA Score: {sepa.score.toFixed(0)}/100
+          </h3>
+          <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${stageColors[tt.stage] || 'bg-slate-100 text-slate-600'}`}>
+            {stageLabels[tt.stage] || tt.stage}
+          </span>
+        </div>
+        <p className="text-sm text-slate-600">{sepa.summary}</p>
+      </div>
+
+      {/* Trend Template — 8 Criteria */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Trend Template</h3>
+          <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${tt.passes ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+            {tt.score}/8
+          </span>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          {tt.criteria.map((c: any, i: number) => (
+            <div
+              key={c.id}
+              className={`flex items-start gap-3 px-5 py-3.5 ${i !== tt.criteria.length - 1 ? 'border-b border-slate-100' : ''}`}
+            >
+              <span className={`mt-0.5 text-sm ${c.passes ? 'text-emerald-500' : 'text-red-400'}`}>
+                {c.passes ? '✓' : '✗'}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-slate-800">{c.label}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{c.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* VCP Pattern */}
+      <div>
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">VCP Pattern Detection</h3>
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <span className={`w-3 h-3 rounded-full ${vcp.detected ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+              <span className="text-sm font-semibold text-slate-800">
+                {vcp.detected ? 'VCP Detected' : 'No VCP Pattern'}
+              </span>
+            </div>
+            <span className="text-xs text-slate-400">Confidence: {vcp.confidence}%</span>
+          </div>
+
+          {vcp.contractions && vcp.contractions.length > 0 && (
+            <div className="space-y-2 mb-4">
+              <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Contractions</p>
+              <div className="flex gap-2 items-end">
+                {vcp.contractions.map((c: any) => (
+                  <div key={c.number} className="flex-1 text-center">
+                    <div
+                      className="bg-indigo-100 rounded-lg mx-auto mb-1"
+                      style={{
+                        height: `${Math.max(c.depthPercent * 3, 12)}px`,
+                        width: '100%',
+                      }}
+                    />
+                    <p className="text-[11px] font-bold text-slate-700">{c.depthPercent.toFixed(1)}%</p>
+                    <p className="text-[10px] text-slate-400">{c.days}d</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {vcp.pivotPrice && (
+            <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+              <span className="text-xs text-slate-400">Pivot:</span>
+              <span className="text-sm font-bold text-indigo-600">₹{vcp.pivotPrice.toFixed(2)}</span>
+            </div>
+          )}
+
+          <p className="text-xs text-slate-500 mt-3">
+            Volume {vcp.volumeDeclining ? 'declining ✓' : 'not declining'}
+          </p>
+        </div>
+      </div>
+
+      {/* Entry Recommendation */}
+      {entry && (
+        <div>
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">SEPA Entry</h3>
+          <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-[10px] text-emerald-600 uppercase tracking-wider font-semibold mb-1">Entry</p>
+                <p className="text-lg font-bold text-slate-900">₹{entry.entryPrice?.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-red-500 uppercase tracking-wider font-semibold mb-1">Stop Loss</p>
+                <p className="text-lg font-bold text-red-600">₹{entry.stopLoss?.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Risk</p>
+                <p className="text-lg font-bold text-slate-700">{entry.riskPercent?.toFixed(1)}%</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">R:R</p>
+                <p className="text-lg font-bold text-slate-700">1:3</p>
+              </div>
+            </div>
+            {entry.targets && (
+              <div className="mt-4 pt-4 border-t border-emerald-200 grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-semibold">Target 1 (1R)</p>
+                  <p className="text-sm font-bold text-slate-700">₹{entry.targets.r1?.toFixed(0)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-semibold">Target 2 (2R)</p>
+                  <p className="text-sm font-bold text-slate-700">₹{entry.targets.r2?.toFixed(0)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-semibold">Target 3 (3R)</p>
+                  <p className="text-sm font-bold text-slate-700">₹{entry.targets.r3?.toFixed(0)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

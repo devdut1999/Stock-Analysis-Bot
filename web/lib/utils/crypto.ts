@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes, createHmac } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, createHmac, timingSafeEqual } from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -122,7 +122,10 @@ export function verifyState(state: string, maxAgeMs: number = 10 * 60 * 1000): R
     .update(payloadBase64)
     .digest('base64url');
   
-  if (signature !== expectedSignature) {
+  // Use timing-safe comparison to prevent timing attacks
+  const sigBuf = Buffer.from(signature);
+  const expectedBuf = Buffer.from(expectedSignature);
+  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) {
     throw new Error('Invalid state signature');
   }
   

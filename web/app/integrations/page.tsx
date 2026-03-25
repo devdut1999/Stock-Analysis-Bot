@@ -15,10 +15,26 @@ interface UserIntegration {
 export default function IntegrationsPage() {
   const [userIntegrations, setUserIntegrations] = useState<UserIntegration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationDefinition | null>(null);
 
   useEffect(() => {
     fetchUserIntegrations();
+
+    // Check for OAuth callback status
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('connected');
+    const errorMsg = params.get('error');
+    if (connected) {
+      setError(null);
+      // Clean URL
+      window.history.replaceState({}, '', '/integrations');
+    }
+    if (errorMsg) {
+      setError(`Connection failed: ${errorMsg}`);
+      window.history.replaceState({}, '', '/integrations');
+    }
   }, []);
 
   const fetchUserIntegrations = async () => {
@@ -36,39 +52,71 @@ export default function IntegrationsPage() {
   };
 
   const handleEnable = async (provider: string, config: Record<string, unknown> = {}) => {
-    // Check if this is an OAuth integration (like Upstox)
-    const integration = INTEGRATIONS.find(i => i.id === provider);
-    if (integration?.authType === 'oauth2') {
-      // Redirect to OAuth flow
-      try {
-        const res = await fetch(`/api/integrations/${provider}/connect`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.redirectUrl) {
-            window.location.href = data.redirectUrl;
-            return;
-          }
-        }
-      } catch {
-        // Fall through to regular enable
-      }
-    }
+    setLoadingProvider(provider);
+    setError(null);
 
-    const res = await fetch('/api/integrations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, config, enabled: true }),
-    });
-    if (res.ok) {
-      await fetchUserIntegrations();
-      setSelectedIntegration(null);
+    try {
+      const integration = INTEGRATIONS.find(i => i.id === provider);
+
+      if (integration?.authType === 'oauth2') {
+        // OAuth providers — must go through the OAuth flow, never fall through to DB toggle
+        const res = await fetch(`/api/integrations/${provider}/connect`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (res.status === 401) {
+            setError('Please log in to connect integrations');
+          } else {
+            setError(data.error || `Failed to initiate ${integration.name} connection`);
+          }
+          return;
+        }
+        const data = await res.json();
+        if (data.redirectUrl) {
+          window.location.href = data.redirectUrl;
+          return; // Redirecting to OAuth provider
+        }
+        setError('OAuth flow failed — no redirect URL received');
+        return;
+      }
+
+      // Non-OAuth providers — simple DB toggle
+      if (integration?.configSchema && integration.configSchema.length > 0 && Object.keys(config).length === 0) {
+        // Needs configuration first
+        setSelectedIntegration(integration);
+        return;
+      }
+
+      const res = await fetch('/api/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, config, enabled: true }),
+      });
+      if (res.ok) {
+        await fetchUserIntegrations();
+        setSelectedIntegration(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to enable integration');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Connection failed');
+    } finally {
+      setLoadingProvider(null);
     }
   };
 
   const handleDisable = async (provider: string) => {
-    const res = await fetch(`/api/integrations?provider=${provider}`, { method: 'DELETE' });
-    if (res.ok) {
-      await fetchUserIntegrations();
+    setLoadingProvider(provider);
+    setError(null);
+    try {
+      const res = await fetch(`/api/integrations?provider=${provider}`, { method: 'DELETE' });
+      if (res.ok) {
+        await fetchUserIntegrations();
+      }
+    } catch {
+      setError('Failed to disconnect');
+    } finally {
+      setLoadingProvider(null);
     }
   };
 
@@ -94,6 +142,14 @@ export default function IntegrationsPage() {
           Connect external data sources, brokers, and notification channels to enhance your trading intelligence.
         </p>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <p className="text-sm text-red-600">{error}</p>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 text-sm font-medium">Dismiss</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -122,6 +178,7 @@ export default function IntegrationsPage() {
                     key={integration.id}
                     integration={integration}
                     connected={isConnected(integration.id)}
+                    loading={loadingProvider === integration.id}
                     onConfigure={() => setSelectedIntegration(integration)}
                     onDisable={() => handleDisable(integration.id)}
                     onQuickEnable={() => handleEnable(integration.id)}

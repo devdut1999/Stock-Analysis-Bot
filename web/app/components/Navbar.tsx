@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { INDIAN_STOCKS, StockInfo } from '../../lib/data/indian-stocks';
 import StockLogo from './StockLogo';
+import { useAuth } from '../../lib/hooks/useAuth';
 
 function fuzzySearch(query: string, stocks: StockInfo[], limit = 6): StockInfo[] {
   if (!query.trim()) return [];
@@ -30,12 +31,15 @@ function fuzzySearch(query: string, stocks: StockInfo[], limit = 6): StockInfo[]
 
 export default function Navbar() {
   const router = useRouter();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<StockInfo[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (query.length >= 1) {
@@ -56,6 +60,9 @@ export default function Navbar() {
         inputRef.current && !inputRef.current.contains(e.target as Node)
       ) {
         setShowSuggestions(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -174,13 +181,57 @@ export default function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
-            <button className="p-2 text-[#666] hover:bg-[#f7f7f7] rounded-lg transition-colors">
+            {/* Notifications placeholder */}
+            <button
+              className="relative p-2 text-[#666] hover:bg-[#f7f7f7] rounded-lg transition-colors"
+              title="Notifications coming soon"
+            >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </button>
-            <div className="w-8 h-8 rounded-full bg-[#5367ff] flex items-center justify-center text-white text-[13px] font-semibold cursor-pointer">
-              U
+
+            {/* User menu */}
+            <div className="relative" ref={userMenuRef}>
+              {authLoading ? (
+                <div className="w-8 h-8 rounded-full bg-[#f0f0f0] animate-pulse" />
+              ) : user ? (
+                <>
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="w-8 h-8 rounded-full bg-[#5367ff] flex items-center justify-center text-white text-[13px] font-semibold hover:bg-[#4356e6] transition-colors"
+                  >
+                    {user.email?.charAt(0).toUpperCase() || 'U'}
+                  </button>
+                  {showUserMenu && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white border border-[#e5e5e5] rounded-xl shadow-lg overflow-hidden z-50">
+                      <div className="px-4 py-3 border-b border-[#f0f0f0]">
+                        <p className="text-[13px] font-medium text-[#1a1a1a] truncate">{user.email}</p>
+                      </div>
+                      <Link
+                        href="/integrations"
+                        onClick={() => setShowUserMenu(false)}
+                        className="block px-4 py-2.5 text-[13px] text-[#666] hover:bg-[#f7f7f7] transition-colors"
+                      >
+                        Integrations
+                      </Link>
+                      <button
+                        onClick={() => { setShowUserMenu(false); signOut(); }}
+                        className="w-full text-left px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="text-[13px] font-semibold text-white bg-[#5367ff] hover:bg-[#4356e6] px-4 py-2 rounded-lg transition-colors"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         </div>

@@ -92,7 +92,7 @@ export async function getUpstoxHistoricalData(
     const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     const data = await upstoxFetch(
-      `/historical-candle/${encodeURIComponent(instrumentKey)}/day/${toDate}/${fromDate}`,
+      `/historical-candle/${instrumentKey}/day/${toDate}/${fromDate}`,
       accessToken
     );
 

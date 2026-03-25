@@ -66,11 +66,11 @@ export async function GET(request: NextRequest) {
       includeTechnicals: true,
       includeFundamentals: true,
       includeIndiaSpecific: true,
-      historicalDays: 90,
+      historicalDays: 365, // 1 year needed for Minervini Trend Template (200-day SMA + history)
       userId,
     });
 
-    // Phase 2: Deep analysis with 10 AI agents (requires API key)
+    // Phase 2: Deep analysis with 11 AI agents (requires API key)
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json({
